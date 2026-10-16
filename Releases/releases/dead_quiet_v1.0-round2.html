@@ -1,0 +1,2930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dead Quiet: Harlow County, 1993</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --manila:#c9b98e; --manila-dark:#a8996f; --ink:#2a2620; --ink-soft:#5a5244;
+  --red:#a3261b; --hazard:#d8a92a; --sick:#6f8a4a; --phosphor:#d6f2c4;
+  --night:#0d0f12;
+  --type:"Special Elite","Courier New",monospace;
+  --osd:"VT323","Lucida Console",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--night);overflow:hidden;color:var(--ink);font-family:var(--type)}
+canvas#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:crosshair}
+#vhs{position:fixed;inset:0;pointer-events:none;z-index:5;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.12) 0 1px,transparent 1px 3px)}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+.hidden{display:none!important}
+
+/* camcorder style on-screen display */
+.osd{font-family:var(--osd);color:var(--phosphor);text-shadow:0 0 4px rgba(214,242,196,.6),2px 2px 0 #000;letter-spacing:1px}
+#stamp{position:fixed;right:22px;bottom:16px;z-index:6;font-size:30px;text-align:right;line-height:1}
+#stamp .rec{color:#ff5a4a;text-shadow:0 0 6px #ff5a4a,2px 2px 0 #000}
+#speed{position:fixed;left:22px;top:14px;z-index:6;font-size:28px}
+#equip{position:fixed;left:22px;bottom:16px;z-index:6;font-size:22px;line-height:1.15}
+.bar{display:inline-block;width:90px;height:8px;border:1px solid var(--phosphor);vertical-align:middle;margin-left:6px}
+.bar>i{display:block;height:100%;background:var(--phosphor)}
+#log{position:fixed;left:50%;bottom:58px;transform:translateX(-50%);z-index:6;font-size:22px;text-align:center;width:min(720px,90vw)}
+#log div{transition:opacity 1s}
+
+/* vitals column */
+#vitals{position:fixed;right:18px;top:14px;z-index:6;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.vital{display:flex;align-items:center;gap:8px;cursor:default}
+.vital .ico{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px;border:2px solid #000;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+.vital .tip{font-family:var(--osd);font-size:20px;color:var(--phosphor);text-shadow:2px 2px 0 #000;opacity:0;transition:opacity .15s;white-space:nowrap;text-align:right}
+.vital:hover .tip{opacity:1}
+.vital .tip small{display:block;font-size:17px;opacity:.8}
+
+/* manila folder panels */
+.panel{position:fixed;z-index:10;background:var(--manila);color:var(--ink);border-radius:2px 14px 3px 3px;
+  box-shadow:0 18px 40px rgba(0,0,0,.6),inset 0 0 60px rgba(120,95,40,.25);padding:16px 18px 18px;font-size:15px;line-height:1.35}
+.panel h2{margin:0 0 10px;font-weight:normal;font-size:22px;border-bottom:2px solid var(--ink-soft);padding-bottom:4px}
+.panel h3{margin:12px 0 4px;font-weight:normal;font-size:16px;color:var(--ink-soft)}
+.panel .close{position:absolute;right:12px;top:10px;background:none;border:1px solid var(--ink);font-family:var(--type);cursor:pointer;padding:1px 7px}
+.panel button{font-family:var(--type)}
+#inv{left:4vw;top:8vh;width:min(880px,92vw);max-height:80vh;min-height:300px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+#inv .col{overflow:auto;padding-right:6px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:3px 6px;border-bottom:1px dashed rgba(42,38,32,.25);cursor:pointer}
+.row:hover{background:rgba(42,38,32,.12)}
+.row .w{color:var(--ink-soft);white-space:nowrap}
+.row.eq{font-weight:bold}
+.tag{font-size:12px;padding:0 4px;border:1px solid var(--ink-soft);margin-left:4px;color:var(--ink-soft)}
+.tag.bad{border-color:var(--red);color:var(--red)}
+.weight{font-size:14px;color:var(--ink-soft);margin-bottom:6px}
+.weight.over{color:var(--red)}
+#health{right:4vw;top:10vh;width:min(520px,92vw);max-height:78vh;overflow:auto}
+#skills{right:4vw;top:10vh;width:min(440px,92vw);max-height:78vh;overflow:auto}
+.skill{display:grid;grid-template-columns:130px 1fr 34px;align-items:center;gap:8px;margin:3px 0}
+.pips{display:flex;gap:2px}.pips i{flex:1;height:10px;border:1px solid var(--ink-soft)}.pips i.on{background:var(--ink)}
+.pips i.part{background:linear-gradient(to right,var(--ink-soft) var(--p),transparent var(--p))}
+#map{left:50%;top:50%;transform:translate(-50%,-50%);padding:14px}
+#map canvas{display:block;image-rendering:pixelated}
+
+#hover{position:fixed;z-index:7;font-size:20px;pointer-events:none;background:rgba(0,0,0,.45);padding:0 6px}
+/* context menu */
+#ctx{position:fixed;z-index:12;background:var(--manila);min-width:220px;box-shadow:0 10px 24px rgba(0,0,0,.6);padding:4px 0;font-size:15px}
+#ctx div{padding:5px 12px;cursor:pointer;display:flex;gap:10px}
+#ctx div:hover{background:var(--ink);color:var(--manila)}
+#ctx div.off{opacity:.45;cursor:default}
+#ctx div.off:hover{background:none;color:inherit}
+#ctx b{font-weight:normal;color:var(--ink-soft);width:14px}
+#ctx div:hover b{color:var(--manila)}
+.itemmenu{position:fixed;z-index:13;background:var(--ink);color:var(--manila);font-size:14px;box-shadow:0 8px 20px rgba(0,0,0,.6)}
+.itemmenu div{padding:5px 12px;cursor:pointer}.itemmenu div:hover{background:var(--manila);color:var(--ink)}
+.itemmenu div.off{opacity:.4;cursor:default}
+
+/* title and creation screens */
+#title,#dead{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:
+  radial-gradient(ellipse at 50% 40%,rgba(40,48,40,.85),rgba(5,6,8,.98) 70%);overflow:auto}
+.tape{width:min(980px,94vw);padding:30px 0}
+.tape .stamp{font-family:var(--osd);font-size:30px;color:var(--phosphor);text-shadow:0 0 6px rgba(214,242,196,.6);display:flex;justify-content:space-between}
+.tape h1{font-family:var(--type);font-weight:normal;color:#e9e1cc;font-size:clamp(56px,11vw,128px);line-height:.9;margin:26px 0 8px;letter-spacing:-2px;
+  text-shadow:3px 0 rgba(255,60,60,.55),-3px 0 rgba(60,200,255,.45);animation:jit 4s infinite steps(1)}
+@keyframes jit{0%,92%,100%{transform:none}93%{transform:translateX(4px) skewX(-4deg)}95%{transform:translateX(-3px)}}
+@media (prefers-reduced-motion:reduce){.tape h1{animation:none}}
+.tape p.lede{color:#b9b29e;font-size:18px;max-width:60ch;margin:0 0 24px}
+.folder{background:var(--manila);padding:18px 20px;border-radius:2px 16px 3px 3px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;box-shadow:0 20px 50px rgba(0,0,0,.7)}
+.folder h3{margin:0 0 8px;font-weight:normal;font-size:18px;border-bottom:2px solid var(--ink-soft)}
+.opt{padding:4px 6px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed rgba(42,38,32,.25);font-size:14px}
+.opt:hover{background:rgba(42,38,32,.12)}
+.opt.sel{background:var(--ink);color:var(--manila)}
+.opt .pts{white-space:nowrap}
+.desc{font-size:13px;color:var(--ink-soft);min-height:52px;margin-top:8px}
+.go{margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.go button,#dead button{font-family:var(--type);font-size:22px;background:var(--red);color:#f1e7d2;border:none;padding:10px 26px;cursor:pointer}
+.go button:disabled{background:#6b625a;cursor:not-allowed}
+.go input{font-family:var(--type);font-size:16px;padding:6px;border:1px solid var(--ink);background:#e2d6b3;width:180px}
+.points{font-size:18px;color:#e9e1cc}
+.points.neg{color:#ff7a6a}
+.keys{color:#b9b29e;font-size:14px;margin-top:18px;line-height:1.6;columns:2;max-width:860px}
+.keys kbd{font-family:var(--osd);font-size:18px;color:var(--phosphor);border:1px solid #556;padding:0 5px;margin-right:4px}
+#dead .tape{text-align:left}
+#dead h1{color:#c9493d}
+#dead .facts{font-family:var(--osd);color:var(--phosphor);font-size:28px;line-height:1.3;margin:10px 0 26px}
+button:focus-visible,.opt:focus-visible{outline:2px solid var(--hazard);outline-offset:2px}
+@media (max-width:760px){.folder{grid-template-columns:1fr}#inv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="vignette"></div>
+<div id="vhs"></div>
+
+<div id="speed" class="osd hidden"></div>
+<div id="vitals" class="hidden"></div>
+<div id="equip" class="osd hidden"></div>
+<div id="stamp" class="osd hidden"></div>
+<div id="log" class="osd"></div>
+<div id="ctx" class="hidden"></div>
+<div id="hover" class="osd hidden"></div>
+
+<div id="inv" class="panel hidden"></div>
+<div id="health" class="panel hidden"></div>
+<div id="skills" class="panel hidden"></div>
+<div id="map" class="panel hidden"><h2>Harlow County, as far as you've seen it</h2><canvas id="mapc" width="500" height="500"></canvas></div>
+
+<div id="title">
+  <div class="tape">
+    <div class="stamp"><span>▶ PLAY</span><span>JUL 14 1993</span></div>
+    <h1>Dead Quiet</h1>
+    <p class="lede">Harlow County has been sealed off for four days. The radio says help is coming. Nobody believes it. There is no rescue and no ending, only how long you lasted.</p>
+    <div class="folder">
+      <div><h3>Occupation</h3><div id="occs"></div><div class="desc" id="occdesc"></div></div>
+      <div><h3>Good traits</h3><div id="ptraits"></div></div>
+      <div><h3>Bad traits</h3><div id="ntraits"></div><div class="desc" id="traitdesc"></div></div>
+    </div>
+    <div class="go">
+      <span class="points" id="points"></span>
+      <input id="pname" value="Sam Whitlock" aria-label="Survivor name">
+      <button id="begin">Begin</button>
+    </div>
+    <div class="keys">
+      <div><kbd>WASD</kbd> move</div>
+      <div><kbd>Shift</kbd> run</div>
+      <div><kbd>C</kbd> sneak on or off</div>
+      <div><kbd>Right mouse</kbd> hold to aim</div>
+      <div><kbd>Left click</kbd> swing weapon</div>
+      <div><kbd>Space</kbd> shove, or stomp a fallen one</div>
+      <div><kbd>E</kbd> interact with what's nearby</div>
+      <div><kbd>I</kbd> inventory and looting</div>
+      <div><kbd>H</kbd> health and treatment</div>
+      <div><kbd>K</kbd> skills</div>
+      <div><kbd>M</kbd> map</div>
+      <div><kbd>F</kbd> flashlight</div>
+      <div><kbd>T</kbd> fast forward</div>
+      <div><kbd>Scroll</kbd> zoom</div>
+    </div>
+  </div>
+</div>
+
+<div id="dead" class="hidden">
+  <div class="tape">
+    <div class="stamp"><span>■ STOP</span><span id="deadstamp"></span></div>
+    <h1>This is where it ended.</h1>
+    <div class="facts" id="deadfacts"></div>
+    <button id="again">Start a new tape</button>
+  </div>
+</div>
+<script>
+"use strict";
+// ============================================================
+// DEAD QUIET  - an isometric survival sandbox
+// Part 1: config + data. Every tunable number lives here.
+// ============================================================
+const CFG = {
+  W: 100, H: 100,                 // map size in tiles
+  TW: 64, TH: 32, WALLH: 44,       // iso tile + wall height in px
+  minPerSec: 1,                    // game minutes per real second at x1 (1 day = 24 real minutes)
+  startDay: 14, startHour: 8,      // July 14th, 8am
+  speeds: [1, 3, 8],               // fast forward steps
+  sleepSpeed: 30,
+  zombieCount: 230,
+  sprinterChance: 0.0,             // set >0 for runners
+  multiHit: false,
+  infect: { scratch: 0.07, laceration: 0.25, bite: 1.0 },
+  infectHours: [48, 72],
+  waterOffDay: [17, 22],           // calendar days (game starts on day 14)
+  powerOffDay: [18, 24],
+  heliDay: [16, 18],
+  walk: 2.1, run: 3.5, sneak: 1.25,
+  zShamble: 0.62, zSprint: 3.6, zCrawl: 0.28,
+  zSightDay: 11, zSightNight: 4.5,
+  zMemory: 18,                     // seconds a zombie keeps tracking after losing sight
+  playerSightDay: 19, playerSightNight: 5.5, flashRange: 13,
+};
+
+// ---------- tiny seeded RNG ----------
+let _seed = 1;
+function srand(s){ _seed = (s >>> 0) || 1; }
+function rnd(){ _seed ^= _seed << 13; _seed >>>= 0; _seed ^= _seed >> 17; _seed ^= _seed << 5; _seed >>>= 0; return _seed / 4294967296; }
+const R = Math.random; // gameplay randomness
+function ri(a, b, f = R){ return a + Math.floor(f() * (b - a + 1)); }
+function rf(a, b, f = R){ return a + f() * (b - a); }
+function pick(arr, f = R){ return arr[Math.floor(f() * arr.length)]; }
+function clamp(v, a, b){ return v < a ? a : v > b ? b : v; }
+function wpick(list, f = R){ // [[item, weight],...]
+  let t = 0; for (const e of list) t += e[1];
+  let r = f() * t; for (const e of list){ r -= e[1]; if (r <= 0) return e[0]; }
+  return list[list.length - 1][0];
+}
+
+// ---------- tiles ----------
+const T = { GRASS:0, ROAD:1, WALK:2, FLOOR:3, WALL:4, DOOR:5, WIN:6, TREE:7, LOT:8, DIRT:9 };
+
+// ---------- items ----------
+// cat: food drink med weapon tool mat book mag bag misc
+// food: hun (hunger restored), thi (thirst restored), unh (unhappiness change), bor (boredom change),
+//       opener (needs a can opener tag), fresh/rot (days until stale/rotten)
+const ITEMS = {
+  beans:     {n:"Can of beans", w:0.6, cat:"food", hun:.32, unh:3, opener:true, empty:"emptycan"},
+  soup:      {n:"Can of soup", w:0.6, cat:"food", hun:.28, thi:.05, opener:true, empty:"emptycan"},
+  peaches:   {n:"Canned peaches", w:0.6, cat:"food", hun:.2, thi:.08, unh:-6, opener:true, empty:"emptycan"},
+  tuna:      {n:"Can of tuna", w:0.4, cat:"food", hun:.22, opener:true, empty:"emptycan"},
+  chips:     {n:"Bag of chips", w:0.2, cat:"food", hun:.12, thi:-.06, unh:-4, bor:-6},
+  cereal:    {n:"Box of cereal", w:0.5, cat:"food", hun:.25, unh:2},
+  crackers:  {n:"Crackers", w:0.2, cat:"food", hun:.14, thi:-.04},
+  pbutter:   {n:"Peanut butter", w:0.5, cat:"food", hun:.3, unh:-2},
+  candy:     {n:"Candy bar", w:0.1, cat:"food", hun:.07, unh:-12, bor:-4},
+  bread:     {n:"Loaf of bread", w:0.4, cat:"food", hun:.3, fresh:3, rot:6},
+  apple:     {n:"Apple", w:0.2, cat:"food", hun:.1, thi:.05, fresh:5, rot:10},
+  banana:    {n:"Banana", w:0.2, cat:"food", hun:.12, fresh:3, rot:6},
+  cheese:    {n:"Block of cheese", w:0.3, cat:"food", hun:.18, unh:-3, fresh:6, rot:14},
+  ham:       {n:"Sliced ham", w:0.3, cat:"food", hun:.2, fresh:2, rot:4},
+  leftovers: {n:"Leftover casserole", w:0.6, cat:"food", hun:.4, unh:-6, fresh:2, rot:4},
+  milk:      {n:"Carton of milk", w:0.9, cat:"drink", thi:.35, hun:.06, fresh:3, rot:6},
+  water:     {n:"Bottle of water", w:0.8, cat:"drink", thi:.55, empty:"bottle"},
+  soda:      {n:"Can of soda", w:0.35, cat:"drink", thi:.32, unh:-6, bor:-3},
+  juice:     {n:"Orange juice", w:0.6, cat:"drink", thi:.4, unh:-3, fresh:7, rot:14},
+  beer:      {n:"Beer", w:0.4, cat:"drink", thi:.2, unh:-14, bor:-8},
+  bottle:    {n:"Empty bottle", w:0.1, cat:"misc", tags:["fillable"]},
+  emptycan:  {n:"Empty can", w:0.05, cat:"misc"},
+  bandage:   {n:"Bandage", w:0.05, cat:"med", tags:["bandage"]},
+  rags:      {n:"Ripped sheets", w:0.05, cat:"med", tags:["bandage"], dirtyRisk:.25},
+  sheet:     {n:"Bed sheet", w:0.8, cat:"misc", rip:4},
+  disinf:    {n:"Disinfectant", w:0.3, cat:"med", tags:["disinfect"], uses:6},
+  vodka:     {n:"Bottle of vodka", w:0.8, cat:"drink", thi:.1, unh:-10, tags:["disinfect"], uses:4},
+  pills:     {n:"Painkillers", w:0.1, cat:"med", tags:["painkiller"], uses:8},
+  antibio:   {n:"Antibiotics", w:0.1, cat:"med", tags:["antibiotic"], uses:4},
+  // weapons: skill, dmg[min,max], range, spd (swing seconds), end (endurance cost), cond, kd (knockdown), crit
+  bat:       {n:"Baseball bat", w:1.5, cat:"weapon", skill:"longblunt", dmg:[.75,1.2], range:1.35, spd:1.05, end:.075, cond:16, kd:.5, crit:.12},
+  golf:      {n:"Golf club", w:1.2, cat:"weapon", skill:"longblunt", dmg:[.55,.95], range:1.4, spd:.95, end:.06, cond:10, kd:.4, crit:.12},
+  crowbar:   {n:"Crowbar", w:2.0, cat:"weapon", skill:"longblunt", dmg:[.7,1.1], range:1.2, spd:1.1, end:.08, cond:45, kd:.45, crit:.1, tags:["pry"]},
+  pipe:      {n:"Lead pipe", w:1.8, cat:"weapon", skill:"longblunt", dmg:[.7,1.05], range:1.3, spd:1.1, end:.08, cond:25, kd:.5, crit:.1},
+  hammer:    {n:"Hammer", w:1.0, cat:"weapon", skill:"shortblunt", dmg:[.45,.75], range:1.0, spd:.75, end:.04, cond:14, kd:.25, crit:.15, tags:["hammer","pry"]},
+  pan:       {n:"Frying pan", w:1.4, cat:"weapon", skill:"shortblunt", dmg:[.45,.8], range:1.05, spd:.85, end:.05, cond:20, kd:.35, crit:.12},
+  rollpin:   {n:"Rolling pin", w:0.8, cat:"weapon", skill:"shortblunt", dmg:[.35,.6], range:1.0, spd:.7, end:.035, cond:8, kd:.25, crit:.1},
+  knife:     {n:"Kitchen knife", w:0.3, cat:"weapon", skill:"blade", dmg:[.4,.8], range:.9, spd:.55, end:.025, cond:6, kd:.05, crit:.3, tags:["opener","cut"]},
+  hunting:   {n:"Hunting knife", w:0.4, cat:"weapon", skill:"blade", dmg:[.6,1.0], range:.95, spd:.55, end:.03, cond:14, kd:.05, crit:.32, tags:["opener","cut"]},
+  screwdrv:  {n:"Screwdriver", w:0.3, cat:"weapon", skill:"blade", dmg:[.3,.6], range:.85, spd:.5, end:.02, cond:6, kd:.03, crit:.25, tags:["opener"]},
+  axe:       {n:"Wood axe", w:3.0, cat:"weapon", skill:"axe", dmg:[1.3,2.2], range:1.25, spd:1.35, end:.13, cond:28, kd:.6, crit:.2, tags:["chop"]},
+  hatchet:   {n:"Hatchet", w:1.2, cat:"weapon", skill:"axe", dmg:[.8,1.3], range:1.0, spd:.85, end:.06, cond:16, kd:.3, crit:.2, tags:["chop"]},
+  shovel:    {n:"Shovel", w:2.0, cat:"weapon", skill:"longblunt", dmg:[.6,1.0], range:1.4, spd:1.1, end:.08, cond:18, kd:.55, crit:.08},
+  opener:    {n:"Can opener", w:0.2, cat:"tool", tags:["opener"]},
+  nails:     {n:"Box of nails", w:0.5, cat:"mat", stack:true},
+  plank:     {n:"Plank", w:1.5, cat:"mat"},
+  saw:       {n:"Saw", w:1.0, cat:"tool", tags:["saw"]},
+  tweezers:  {n:"Tweezers", w:0.05, cat:"tool", tags:["tweezers"]},
+  needle:    {n:"Needle and thread", w:0.05, cat:"med", tags:["suture"], uses:4},
+  batteries: {n:"Batteries", w:0.1, cat:"misc"},
+  watch:     {n:"Wristwatch", w:0.1, cat:"misc"},
+  backpack:  {n:"Hiking backpack", w:0.9, cat:"bag", cap:20, red:.65},
+  schoolbag: {n:"School bag", w:0.6, cat:"bag", cap:12, red:.45},
+  duffel:    {n:"Duffel bag", w:0.8, cat:"bag", cap:17, red:.4},
+  bk_carp:   {n:"Carpentry for Beginners", w:0.6, cat:"book", skill:"carpentry"},
+  bk_aid:    {n:"The Field Medic's Handbook", w:0.6, cat:"book", skill:"firstaid"},
+  bk_axe:    {n:"Lumberjack's Almanac", w:0.6, cat:"book", skill:"axe"},
+  bk_sneak:  {n:"Hunting the Quiet Way", w:0.6, cat:"book", skill:"sneak"},
+  bk_blunt:  {n:"Little League Coaching Manual", w:0.6, cat:"book", skill:"longblunt"},
+  mag:       {n:"Gossip magazine", w:0.2, cat:"mag", bor:-30, unh:-12},
+  comic:     {n:"Comic book", w:0.15, cat:"mag", bor:-35, unh:-15},
+  novel:     {n:"Paperback novel", w:0.4, cat:"mag", bor:-50, unh:-20, long:true},
+  cigs:      {n:"Cigarettes", w:0.1, cat:"misc", unh:-8, uses:10, smoke:true},
+};
+for (const k in ITEMS){ ITEMS[k].id = k; ITEMS[k].tags = ITEMS[k].tags || []; }
+
+// ---------- loot tables: container -> weighted items, roll count ----------
+const LOOT = {
+  fridge:   {rolls:[1,4], items:[["milk",4],["water",4],["soda",5],["juice",3],["apple",3],["banana",2],["cheese",3],["ham",3],["leftovers",3],["beer",4],["bread",1]]},
+  counter:  {rolls:[0,3], items:[["knife",5],["opener",4],["beans",4],["soup",4],["tuna",3],["peaches",2],["cereal",3],["crackers",3],["pbutter",2],["chips",3],["pan",2],["rollpin",2],["bottle",3],["bread",2],["candy",2],["vodka",1]]},
+  oven:     {rolls:[0,1], items:[["pan",3],["leftovers",1]]},
+  medcab:   {rolls:[1,3], items:[["bandage",6],["pills",4],["disinf",4],["antibio",1],["tweezers",2],["needle",2]]},
+  wardrobe: {rolls:[0,3], items:[["sheet",6],["backpack",1],["schoolbag",2],["duffel",2],["bat",1],["golf",1]]},
+  dresser:  {rolls:[0,3], items:[["sheet",4],["mag",3],["watch",2],["cigs",2],["batteries",2],["candy",1],["hunting",1]]},
+  books:    {rolls:[1,4], items:[["novel",5],["mag",4],["comic",4],["bk_carp",2],["bk_aid",2],["bk_axe",1],["bk_sneak",1],["bk_blunt",1]]},
+  crate:    {rolls:[1,4], items:[["hammer",3],["nails",4],["plank",3],["saw",2],["screwdrv",3],["crowbar",1],["pipe",2],["shovel",2],["hatchet",1],["axe",1]]},
+  shelf_grocery:  {rolls:[2,6], items:[["beans",5],["soup",5],["tuna",4],["peaches",3],["chips",5],["cereal",4],["crackers",3],["pbutter",3],["candy",4],["soda",5],["water",5],["bread",2],["opener",1]]},
+  shelf_pharmacy: {rolls:[2,5], items:[["bandage",6],["pills",5],["disinf",4],["antibio",2],["needle",2],["tweezers",2],["candy",3],["water",2],["mag",2],["comic",2]]},
+  shelf_hardware: {rolls:[1,4], items:[["hammer",4],["nails",6],["plank",4],["saw",3],["screwdrv",3],["crowbar",2],["axe",1],["hatchet",2],["shovel",2],["pipe",2],["batteries",2],["bk_carp",1]]},
+  corpse:   {rolls:[0,2], items:[["candy",3],["cigs",3],["watch",2],["bandage",2],["water",1],["chips",2],["knife",1],["hammer",1],["schoolbag",1]]},
+};
+
+// ---------- furniture / objects ----------
+// cont: loot table, block: blocks movement, h: draw height, col: color
+const OBJ = {
+  fridge:   {n:"Fridge", cont:"fridge", block:true, h:40, col:"#d9dcd6", cap:30},
+  counter:  {n:"Kitchen counter", cont:"counter", block:true, h:18, col:"#8a6a4a", cap:25},
+  oven:     {n:"Stove", cont:"oven", block:true, h:18, col:"#3b3d40", cap:10},
+  ksink:    {n:"Kitchen sink", block:true, h:18, col:"#9aa5ad", water:true},
+  medcab:   {n:"Medicine cabinet", cont:"medcab", block:true, h:30, col:"#e8e8e0", cap:6},
+  bsink:    {n:"Bathroom sink", block:true, h:16, col:"#e4e6e8", water:true},
+  toilet:   {n:"Toilet", block:true, h:12, col:"#f0f0ee", toilet:true},
+  bed:      {n:"Bed", block:true, h:10, col:"#6f7fa0", bed:true},
+  wardrobe: {n:"Wardrobe", cont:"wardrobe", block:true, h:42, col:"#6b4a32", cap:30, dis:true},
+  dresser:  {n:"Dresser", cont:"dresser", block:true, h:20, col:"#7b5a3c", cap:20, dis:true},
+  sofa:     {n:"Sofa", block:true, h:12, col:"#7a3f3a", seat:true, dis:true},
+  bookcase: {n:"Bookcase", cont:"books", block:true, h:40, col:"#5e4430", cap:20, dis:true},
+  tv:       {n:"Television", block:true, h:16, col:"#26282b", tv:true},
+  crate:    {n:"Storage crate", cont:"crate", block:true, h:16, col:"#9b7b4c", cap:30, dis:true},
+  shelf:    {n:"Store shelf", cont:"shelf", block:true, h:30, col:"#8c9196", cap:40},
+  checkout: {n:"Checkout counter", block:true, h:16, col:"#4a5560"},
+  car:      {n:"Abandoned car", block:true, h:22, col:"#5a6470", car:true},
+};
+
+// ---------- skills ----------
+const SKILLS = {
+  fitness:   {n:"Fitness", grp:"Passive"},
+  strength:  {n:"Strength", grp:"Passive"},
+  running:   {n:"Running", grp:"Agility"},
+  sneak:     {n:"Sneaking", grp:"Agility"},
+  longblunt: {n:"Long blunt", grp:"Combat"},
+  shortblunt:{n:"Short blunt", grp:"Combat"},
+  blade:     {n:"Blades", grp:"Combat"},
+  axe:       {n:"Axe", grp:"Combat"},
+  carpentry: {n:"Carpentry", grp:"Crafting"},
+  firstaid:  {n:"First aid", grp:"Survival"},
+};
+const XP_NEED = [75, 150, 300, 750, 1500, 3000, 4500, 6000, 7500, 9000];
+
+// ---------- occupations ----------
+const OCCS = {
+  unemployed:{n:"Unemployed", pts:8, sk:{}, d:"No useful skills, but plenty of room for personal quirks.", shirt:"#6d7a63"},
+  carpenter: {n:"Carpenter", pts:2, sk:{carpentry:3, shortblunt:1}, d:"Builds barricades fast and swings a hammer well.", shirt:"#a0683b"},
+  nurse:     {n:"Nurse", pts:2, sk:{firstaid:3, sneak:1}, d:"Treats wounds quickly and they heal faster.", shirt:"#4f8a86"},
+  lumberjack:{n:"Lumberjack", pts:0, sk:{axe:2, strength:1}, d:"Lethal with an axe and used to hard work.", shirt:"#8b2e2a"},
+  burglar:   {n:"Burglar", pts:-2, sk:{sneak:3, running:1}, d:"Quiet on their feet and quick to slip away.", shirt:"#2f3238"},
+  coach:     {n:"Little league coach", pts:0, sk:{longblunt:2, fitness:1, running:1}, d:"Knows how to swing a bat and keep going.", shirt:"#2c4f8a"},
+};
+
+// ---------- traits ----------
+// cost > 0 = good trait that costs points, cost < 0 = bad trait that gives points
+const TRAITS = {
+  strong:     {n:"Strong", cost:6, d:"+2 strength. Carry more and hit harder."},
+  athletic:   {n:"Athletic", cost:6, d:"+2 fitness. Tire much more slowly."},
+  fastlearn:  {n:"Fast learner", cost:5, d:"Earn 30% more skill experience."},
+  brave:      {n:"Brave", cost:4, d:"Panic builds at half the rate."},
+  keenhear:   {n:"Keen hearing", cost:4, d:"Notice what's right behind you from further away."},
+  lighteat:   {n:"Light eater", cost:3, d:"Get hungry 25% slower."},
+  lucky:      {n:"Lucky", cost:4, d:"Find more in containers."},
+  inconsp:    {n:"Inconspicuous", cost:4, d:"The dead are slower to notice you."},
+  organized:  {n:"Organized", cost:4, d:"+4 carry capacity and faster transfers."},
+  eagle:      {n:"Eagle eyed", cost:3, d:"See further."},
+  weak:       {n:"Weak", cost:-6, d:"-2 strength."},
+  unfit:      {n:"Unfit", cost:-6, d:"-2 fitness."},
+  slowlearn:  {n:"Slow learner", cost:-5, d:"Earn 30% less skill experience."},
+  cowardly:   {n:"Cowardly", cost:-3, d:"Panic builds nearly twice as fast."},
+  hearty:     {n:"Hearty appetite", cost:-4, d:"Get hungry 25% faster."},
+  clumsy:     {n:"Clumsy", cost:-3, d:"Your footsteps are louder."},
+  consp:      {n:"Conspicuous", cost:-4, d:"The dead notice you from further away."},
+  shortsight: {n:"Short sighted", cost:-3, d:"See a shorter distance."},
+  thinskin:   {n:"Thin skinned", cost:-5, d:"Attacks get through to your skin more often."},
+  restless:   {n:"Restless sleeper", cost:-3, d:"Get tired 20% faster."},
+};
+
+// ---------- body ----------
+const PARTS = [
+  ["head","Head",3],["neck","Neck",3],["torso_u","Upper torso",8],["torso_l","Lower torso",6],["groin","Groin",2],
+  ["uarm_l","Left upper arm",7],["uarm_r","Right upper arm",7],["farm_l","Left forearm",10],["farm_r","Right forearm",10],
+  ["hand_l","Left hand",9],["hand_r","Right hand",9],["thigh_l","Left thigh",4],["thigh_r","Right thigh",4],
+  ["shin_l","Left shin",4],["shin_r","Right shin",4],["foot_l","Left foot",2],["foot_r","Right foot",2],
+];
+const PARTNAME = Object.fromEntries(PARTS.map(p => [p[0], p[1]]));
+const WOUND = {
+  scratch:   {n:"Scratch", bleed:.035, heal:36, pain:8},
+  laceration:{n:"Laceration", bleed:.08, heal:80, pain:16},
+  bite:      {n:"Bite", bleed:.11, heal:140, pain:24},
+  glass:     {n:"Glass shard cut", bleed:.07, heal:60, pain:14},
+};
+
+// ---------- TV schedule (original text) ----------
+const BROADCAST = {
+  14:["...officials in Harlow County are asking residents to remain indoors while the cordon is reinforced.",
+      "A doctor from the state health board says the illness spreads through bites and close contact. Do not approach the sick.",
+      "Highway 9 and the Old Mill bridge are closed. Military checkpoints will turn back all traffic."],
+  15:["Reports of looting downtown. The Governor has authorized the National Guard to use force.",
+      "If a family member is sick, separate them from the household. We cannot stress this enough.",
+      "Phone lines in the quarantine area are now down. Officials say the outage is temporary."],
+  16:["This station will continue broadcasting for as long as we are able.",
+      "Unconfirmed reports say the checkpoint at the county line was overrun last night.",
+      "We have lost contact with our reporters in Harlow. If you can hear this, stay inside, stay quiet."],
+  17:["THIS IS AN EMERGENCY BROADCAST. REMAIN IN YOUR HOMES. AWAIT FURTHER INSTRUCTIONS.",
+      "THIS IS AN EMERGENCY BROADCAST. DO NOT ATTEMPT TO LEAVE THE QUARANTINE ZONE."],
+};
+// ============================================================
+// Part 2: world + procedural town
+// ============================================================
+const W = CFG.W, H = CFG.H;
+let tile, roomId, bldId, explored;
+let objs;        // Map idx -> object
+let feats;       // Map idx -> door/window state
+let floorItems;  // Map idx -> item list
+let rooms, buildings, perim;
+const ix = (x, y) => y * W + x;
+const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+
+function genWorld(seed){
+  srand(seed);
+  tile = new Uint8Array(W * H).fill(T.GRASS);
+  roomId = new Int16Array(W * H).fill(-1);
+  bldId = new Int16Array(W * H).fill(-1);
+  explored = new Uint8Array(W * H);
+  objs = new Map(); feats = new Map(); floorItems = new Map();
+  rooms = []; buildings = [];
+
+  const RP = [6, 34, 62, 90];
+  for (const r of RP){
+    for (let i = 0; i < W; i++) for (let k = 0; k < 3; k++){
+      tile[ix(i, r + k)] = T.ROAD; tile[ix(r + k, i)] = T.ROAD;
+    }
+  }
+  for (const r of RP){
+    for (let i = 0; i < W; i++) for (const k of [r - 1, r + 3]){
+      if (inb(i, k) && tile[ix(i, k)] === T.GRASS) tile[ix(i, k)] = T.WALK;
+      if (inb(k, i) && tile[ix(k, i)] === T.GRASS) tile[ix(k, i)] = T.WALK;
+    }
+  }
+  // forest belt around the town
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+    if (tile[ix(x, y)] !== T.GRASS) continue;
+    const edge = x < 5 || y < 5 || x > 94 || y > 94;
+    if (edge && rnd() < 0.42) tile[ix(x, y)] = T.TREE;
+  }
+  // blocks
+  for (let bj = 0; bj < 3; bj++) for (let bi = 0; bi < 3; bi++){
+    const x0 = RP[bi] + 4, x1 = RP[bi + 1] - 2, y0 = RP[bj] + 4, y1 = RP[bj + 1] - 2;
+    if (bi === 1 && bj === 1){ genCommercial(x0, y0, x1, y1); continue; }
+    if (bi === 2 && bj === 0){ genPark(x0, y0, x1, y1); continue; }
+    const mid = Math.floor((x0 + x1) / 2), midy = Math.floor((y0 + y1) / 2);
+    const lots = [[x0, y0, mid - 1, midy - 1, "top"], [mid + 1, y0, x1, midy - 1, "top"],
+                  [x0, midy + 1, mid - 1, y1, "bottom"], [mid + 1, midy + 1, x1, y1, "bottom"]];
+    for (const L of lots) genLot(...L);
+  }
+  // which wall tiles are on a building's outside edge
+  perim = new Uint8Array(W * H);
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++){
+    const b = bldId[ix(x, y)]; if (b < 0 || tile[ix(x, y)] === T.FLOOR) continue;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (bldId[ix(x + dx, y + dy)] !== b) perim[ix(x, y)] = 1;
+  }
+  // abandoned cars
+  for (let n = 0; n < 26; n++){
+    const r = pick(RP, rnd), along = ri(2, W - 3, rnd), lane = r + ri(0, 2, rnd);
+    const [x, y] = rnd() < .5 ? [along, lane] : [lane, along];
+    if (tile[ix(x, y)] === T.ROAD && !objs.has(ix(x, y))) placeObj("car", x, y, -1).col = pick(["#6b2e2a", "#2f4a5e", "#8a8470", "#3e4a3a", "#9a9a94", "#5a4a3a"], rnd);
+  }
+}
+
+function genPark(x0, y0, x1, y1){
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){
+    if (rnd() < 0.18) tile[ix(x, y)] = T.TREE;
+    else if (rnd() < 0.08) tile[ix(x, y)] = T.DIRT;
+  }
+}
+
+function genLot(lx0, ly0, lx1, ly1, front){
+  const lw = lx1 - lx0 + 1, lh = ly1 - ly0 + 1;
+  const hw = Math.min(lw - 1, ri(9, 11, rnd)), hh = Math.min(lh - 1, ri(9, 11, rnd));
+  const hx0 = lx0 + ri(0, lw - hw, rnd);
+  const hy0 = front === "top" ? ly0 + Math.min(1, lh - hh) : ly1 - hh + 1 - Math.min(1, lh - hh);
+  buildHouse(hx0, hy0, hx0 + hw - 1, hy0 + hh - 1, front);
+  // yard trees
+  for (let y = ly0; y <= ly1; y++) for (let x = lx0; x <= lx1; x++){
+    if (tile[ix(x, y)] === T.GRASS && rnd() < 0.05 && !nearType(x, y, [T.DOOR, T.WIN, T.WALL], 1)) tile[ix(x, y)] = T.TREE;
+  }
+}
+
+function nearType(x, y, types, r){
+  for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++){
+    if (inb(x + dx, y + dy) && types.includes(tile[ix(x + dx, y + dy)])) return true;
+  }
+  return false;
+}
+
+function newBuilding(kind){
+  const b = { id: buildings.length, kind, alarm: rnd() < 0.12, alarmUsed: false };
+  buildings.push(b); return b;
+}
+
+function setDoor(x, y, locked){
+  tile[ix(x, y)] = T.DOOR;
+  const horiz = tile[ix(x - 1, y)] === T.WALL || tile[ix(x + 1, y)] === T.WALL;
+  feats.set(ix(x, y), { type: "door", open: false, locked, hp: 22, bar: 0, horiz, x, y });
+}
+function setWin(x, y){
+  tile[ix(x, y)] = T.WIN;
+  const horiz = tile[ix(x - 1, y)] === T.WALL || tile[ix(x + 1, y)] === T.WALL;
+  feats.set(ix(x, y), { type: "win", open: false, broken: false, glass: false, hp: 3, bar: 0, horiz, x, y, curtain: rnd() < .5, locked: rnd() < .3 });
+}
+
+function buildHouse(x0, y0, x1, y1, front){
+  const b = newBuilding("house");
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){
+    const edge = x === x0 || x === x1 || y === y0 || y === y1;
+    tile[ix(x, y)] = edge ? T.WALL : T.FLOOR; bldId[ix(x, y)] = b.id;
+  }
+  const w = x1 - x0, h = y1 - y0;
+  const doorsPlaced = [];
+  // vertical interior wall
+  const vx = ri(x0 + 4, Math.max(x0 + 4, x1 - 4), rnd);
+  for (let y = y0; y <= y1; y++) tile[ix(vx, y)] = T.WALL;
+  // horizontal walls each side
+  const hyL = ri(y0 + 4, Math.max(y0 + 4, y1 - 4), rnd);
+  for (let x = x0; x <= vx; x++) tile[ix(x, hyL)] = T.WALL;
+  let hyR = -1;
+  if (rnd() < 0.65 && h >= 8){ hyR = ri(y0 + 4, Math.max(y0 + 4, y1 - 4), rnd);
+    for (let x = vx; x <= x1; x++) tile[ix(x, hyR)] = T.WALL; }
+  // interior doors
+  const tryDoor = (cands) => {
+    const ok = cands.filter(([x, y]) => {
+      const horiz = tile[ix(x - 1, y)] === T.WALL && tile[ix(x + 1, y)] === T.WALL;
+      const vert = tile[ix(x, y - 1)] === T.WALL && tile[ix(x, y + 1)] === T.WALL;
+      if (horiz) return tile[ix(x, y - 1)] === T.FLOOR && tile[ix(x, y + 1)] === T.FLOOR;
+      if (vert) return tile[ix(x - 1, y)] === T.FLOOR && tile[ix(x + 1, y)] === T.FLOOR;
+      return false;
+    });
+    if (ok.length){ const [x, y] = pick(ok, rnd); setDoor(x, y, false); doorsPlaced.push([x, y]); }
+  };
+  const c1 = []; for (let x = x0 + 1; x < vx; x++) c1.push([x, hyL]); tryDoor(c1);
+  if (hyR > 0){ const c2 = []; for (let x = vx + 1; x < x1; x++) c2.push([x, hyR]); tryDoor(c2); }
+  const c3 = []; for (let y = y0 + 1; y < y1; y++) c3.push([vx, y]); tryDoor(c3);
+  // exterior doors
+  const frontY = front === "top" ? y0 : y1, backY = front === "top" ? y1 : y0;
+  const extDoor = (yy) => {
+    const inner = yy === y0 ? 1 : -1, c = [];
+    for (let x = x0 + 1; x < x1; x++) if (tile[ix(x, yy + inner)] === T.FLOOR && tile[ix(x - 1, yy)] === T.WALL && tile[ix(x + 1, yy)] === T.WALL && x !== vx) c.push(x);
+    if (c.length){ const x = pick(c, rnd); setDoor(x, yy, rnd() < 0.35); }
+  };
+  extDoor(frontY); if (rnd() < 0.45) extDoor(backY);
+  // windows on exterior walls
+  const winAt = (x, y, ox, oy) => {
+    if (tile[ix(x, y)] !== T.WALL) return;
+    if (!inb(x + ox, y + oy) || tile[ix(x + ox, y + oy)] !== T.FLOOR) return;
+    if (nearType(x, y, [T.DOOR, T.WIN], 1)) return;
+    setWin(x, y);
+  };
+  for (let x = x0 + 1; x < x1; x++){ if ((x - x0) % 3 === 2){ winAt(x, y0, 0, 1); winAt(x, y1, 0, -1); } }
+  for (let y = y0 + 1; y < y1; y++){ if ((y - y0) % 3 === 2){ winAt(x0, y, 1, 0); winAt(x1, y, -1, 0); } }
+  // rooms
+  const found = [];
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++){
+    if (tile[ix(x, y)] !== T.FLOOR || roomId[ix(x, y)] >= 0) continue;
+    const r = { id: rooms.length, type: "living", tiles: [], b: b.id }; rooms.push(r); found.push(r);
+    const st = [[x, y]]; roomId[ix(x, y)] = r.id;
+    while (st.length){ const [cx, cy] = st.pop(); r.tiles.push([cx, cy]);
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx = cx + dx, ny = cy + dy;
+        if (tile[ix(nx, ny)] === T.FLOOR && roomId[ix(nx, ny)] < 0){ roomId[ix(nx, ny)] = r.id; st.push([nx, ny]); } } }
+  }
+  found.sort((a, b) => b.tiles.length - a.tiles.length);
+  const types = found.length >= 4 ? ["living", "bedroom", "kitchen", "bathroom"] : found.length === 3 ? ["living", "kitchen", "bedroom"] : ["kitchen", "bedroom"];
+  found.forEach((r, i) => r.type = types[i] || "bedroom");
+  // smallest of 4+ rooms is the bathroom, extra rooms become bedrooms
+  if (found.length > 4){ found[found.length - 1].type = "bathroom"; for (let i = 3; i < found.length - 1; i++) found[i].type = "bedroom"; }
+  const FURN = {
+    kitchen: ["fridge", "oven", "ksink", "counter", "counter", rnd() < .5 ? "counter" : null],
+    bathroom: ["toilet", "bsink", "medcab"],
+    bedroom: ["bed", "wardrobe", "dresser", rnd() < .3 ? "bookcase" : null],
+    living: ["sofa", "tv", "bookcase", rnd() < .3 ? "dresser" : null],
+  };
+  for (const r of found) furnishRoom(r, FURN[r.type].filter(Boolean));
+  b.x0 = x0; b.y0 = y0; b.x1 = x1; b.y1 = y1;
+}
+
+// place furniture against walls while keeping every doorway and window reachable
+function furnishRoom(r, list){
+  const set = new Set(r.tiles.map(([x, y]) => ix(x, y)));
+  const access = [], cands = [];
+  for (const [x, y] of r.tiles){
+    let wallAdj = false, openAdj = false;
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const t = tile[ix(x + dx, y + dy)];
+      if (t === T.WALL) wallAdj = true;
+      if (t === T.DOOR || t === T.WIN) openAdj = true;
+    }
+    if (openAdj) access.push(ix(x, y));
+    else if (wallAdj) cands.push([x, y]);
+  }
+  const reachable = () => {
+    if (!access.length) return true;
+    const seen = new Set([access[0]]), st = [access[0]];
+    while (st.length){ const i = st.pop(), x = i % W, y = (i / W) | 0;
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const j = ix(x + dx, y + dy);
+        if (set.has(j) && !seen.has(j) && !objs.has(j)){ seen.add(j); st.push(j); } } }
+    return access.every(a => seen.has(a));
+  };
+  for (const type of list){
+    for (let tries = 0; tries < 8 && cands.length; tries++){
+      const k = Math.floor(rnd() * cands.length), [x, y] = cands[k];
+      cands.splice(k, 1);
+      placeObj(type, x, y, r.id);
+      if (reachable()) break;
+      objs.delete(ix(x, y));
+    }
+  }
+}
+
+function placeObj(type, x, y, rid){
+  const o = { type, x, y, items: null, room: rid };
+  if (OBJ[type].water) o.water = -1;   // -1 = mains water (until shutoff)
+  if (OBJ[type].toilet) o.water = 0;
+  if (type === "car") o.dir = (tile[ix(x - 1, y)] === T.ROAD && tile[ix(x + 1, y)] === T.ROAD) ? [1, 0] : [0, 1];
+  else {
+    for (const [dx, dy] of [[0, -1], [-1, 0], [0, 1], [1, 0]]){
+      const t = inb(x + dx, y + dy) ? tile[ix(x + dx, y + dy)] : -1;
+      if (t === T.WALL || t === T.WIN){ o.dir = [-dx, -dy]; break; }
+    }
+  }
+  objs.set(ix(x, y), o); return o;
+}
+
+function genStore(x0, y0, x1, y1, kind, frontY){
+  const b = newBuilding(kind);
+  b.x0 = x0; b.y0 = y0; b.x1 = x1; b.y1 = y1;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){
+    const edge = x === x0 || x === x1 || y === y0 || y === y1;
+    tile[ix(x, y)] = edge ? T.WALL : T.FLOOR; bldId[ix(x, y)] = b.id;
+  }
+  const r = { id: rooms.length, type: kind, tiles: [], b: b.id }; rooms.push(r);
+  for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++){ roomId[ix(x, y)] = r.id; r.tiles.push([x, y]); }
+  const mx = Math.floor((x0 + x1) / 2);
+  setDoor(mx, frontY, false); setDoor(mx + 1, frontY, rnd() < 0.3);
+  for (let x = x0 + 2; x < x1 - 1; x++) if (Math.abs(x - mx) > 2 && x % 2 === 0) setWin(x, frontY);
+  const inner = frontY === y0 ? 1 : -1;
+  const backY = frontY === y0 ? y1 - 2 : y0 + 2;
+  const shelfY0 = frontY === y0 ? y0 + 3 : y0 + 2, shelfY1 = frontY === y0 ? y1 - 2 : y1 - 3;
+  for (let x = x0 + 2; x <= x1 - 2; x += 3){
+    if (Math.abs(x - mx) <= 1) continue;
+    for (let y = shelfY0; y <= shelfY1; y++){ const o = placeObj(kind === "hardware" && rnd() < .4 ? "crate" : "shelf", x, y, r.id); o.store = kind; }
+  }
+  // checkout near the door
+  if (inb(mx - 2, frontY + inner * 2) && !objs.has(ix(mx - 2, frontY + inner * 2))) placeObj("checkout", mx - 2, frontY + inner * 2, r.id);
+  if (kind === "pharmacy") placeObj("medcab", x1 - 1, backY, r.id);
+}
+
+function genCommercial(x0, y0, x1, y1){
+  genStore(x0, y0, x1, y0 + 10, "grocery", y0);
+  genStore(x0, y1 - 10, x0 + 10, y1, "pharmacy", y1);
+  genStore(x1 - 10, y1 - 10, x1, y1, "hardware", y1);
+  for (let y = y0 + 11; y < y1 - 10; y++) for (let x = x0; x <= x1; x++) if (tile[ix(x, y)] === T.GRASS) tile[ix(x, y)] = T.LOT;
+}
+
+// ---------- passability ----------
+function solidP(x, y){
+  if (!inb(x, y)) return true;
+  const t = tile[ix(x, y)];
+  if (t === T.WALL || t === T.TREE || t === T.WIN) return true;
+  if (t === T.DOOR) return !feats.get(ix(x, y)).open;
+  const o = objs.get(ix(x, y)); return !!(o && OBJ[o.type].block);
+}
+function solidZ(x, y){
+  if (!inb(x, y)) return true;
+  const t = tile[ix(x, y)];
+  if (t === T.WALL || t === T.TREE) return true;
+  if (t === T.DOOR) return !feats.get(ix(x, y)).open;
+  if (t === T.WIN){ const f = feats.get(ix(x, y)); return !(f.open || f.broken) || f.bar > 0; }
+  const o = objs.get(ix(x, y)); return !!(o && OBJ[o.type].block);
+}
+// can a zombie path through it (possibly by bashing)?
+function pathZ(x, y){
+  if (!inb(x, y)) return false;
+  const t = tile[ix(x, y)];
+  if (t === T.WALL || t === T.TREE) return false;
+  if (t === T.DOOR || t === T.WIN) return true;
+  const o = objs.get(ix(x, y)); return !(o && OBJ[o.type].block);
+}
+function opaque(x, y){
+  if (!inb(x, y)) return true;
+  const t = tile[ix(x, y)];
+  if (t === T.WALL) return true;
+  if (t === T.DOOR) return !feats.get(ix(x, y)).open;
+  if (t === T.WIN){ const f = feats.get(ix(x, y)); return f.bar >= 2 || (f.curtain && !f.broken && !f.open); }
+  return false;
+}
+// line of sight between two world points (DDA)
+function los(ax, ay, bx, by){
+  const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
+  const steps = Math.ceil(d * 2.5);
+  const tx = Math.floor(bx), ty = Math.floor(by);
+  for (let i = 1; i < steps; i++){
+    const x = Math.floor(ax + dx * i / steps), y = Math.floor(ay + dy * i / steps);
+    if (x === tx && y === ty) return true;
+    if (opaque(x, y)) return false;
+  }
+  return true;
+}
+// ============================================================
+// Part 3: player, items, timed actions, needs, vitals, skills
+// ============================================================
+let G = null;   // game state
+let P = null;   // player
+
+function makeItem(id){
+  const d = ITEMS[id], it = { id };
+  if (d.cond) it.cond = d.cond;
+  if (d.uses) it.uses = d.uses;
+  if (d.fresh) it.age = rf(0, d.fresh * 0.6) * 1440;
+  if (id === "nails") it.qty = ri(10, 30);
+  if (d.cat === "bag") it.items = [];
+  return it;
+}
+function iname(it){
+  const d = ITEMS[it.id]; let s = d.n;
+  if (it.qty) s += ` (${it.qty})`;
+  if (it.uses !== undefined) s += ` [${it.uses}]`;
+  return s;
+}
+function freshState(it){
+  const d = ITEMS[it.id]; if (!d.fresh) return null;
+  if (it.age < d.fresh * 1440) return "fresh";
+  if (it.age < d.rot * 1440) return "stale";
+  return "rotten";
+}
+function ageList(list, minutes){ for (const it of list) if (it.age !== undefined) it.age += minutes; }
+const listWeight = l => l.reduce((s, it) => s + ITEMS[it.id].w, 0);
+function carryCap(){ return 8 + skill("strength") + (P.traits.has("organized") ? 4 : 0); }
+function totalLoad(){
+  let w = listWeight(P.inv);
+  if (P.bag) w += ITEMS[P.bag.id].w + listWeight(P.bag.items) * (1 - ITEMS[P.bag.id].red);
+  return w;
+}
+function allCarried(){ return P.bag ? P.inv.concat(P.bag.items) : P.inv; }
+function findTag(tag){ return allCarried().find(it => ITEMS[it.id].tags.includes(tag) && (it.uses === undefined || it.uses > 0)); }
+function findId(id){ return allCarried().find(it => it.id === id); }
+function removeItem(it){
+  let k = P.inv.indexOf(it); if (k >= 0){ P.inv.splice(k, 1); if (P.weapon === it) P.weapon = null; return true; }
+  if (P.bag){ k = P.bag.items.indexOf(it); if (k >= 0){ P.bag.items.splice(k, 1); if (P.weapon === it) P.weapon = null; return true; } }
+  return false;
+}
+function giveItem(it){
+  const d = ITEMS[it.id];
+  if (P.bag && d.cat !== "bag" && listWeight(P.bag.items) + d.w <= ITEMS[P.bag.id].cap && P.weapon !== it){ P.bag.items.push(it); return "bag"; }
+  P.inv.push(it); return "inv";
+}
+function useOne(it){ if (it.uses !== undefined){ it.uses--; if (it.uses <= 0) removeItem(it); } else removeItem(it); }
+
+// ---------- skills ----------
+function skill(id){ return P.sk[id].lvl; }
+function addXP(id, amt){
+  const s = P.sk[id]; if (s.lvl >= 10) return;
+  let m = P.traits.has("fastlearn") ? 1.3 : P.traits.has("slowlearn") ? 0.7 : 1;
+  if (P.books[id] && s.lvl < 6) m *= 3;
+  s.xp += amt * m;
+  while (s.lvl < 10 && s.xp >= XP_NEED[s.lvl]){ s.xp -= XP_NEED[s.lvl]; s.lvl++; say(`${SKILLS[id].n} improved to level ${s.lvl}.`, "#d6f2c4"); }
+}
+
+// ---------- new game ----------
+function newPlayer(name, occ, traits){
+  const sk = {}; for (const k in SKILLS) sk[k] = { lvl: 0, xp: 0 };
+  sk.fitness.lvl = 5; sk.strength.lvl = 5;
+  for (const k in OCCS[occ].sk) sk[k].lvl += OCCS[occ].sk[k];
+  if (traits.has("strong")) sk.strength.lvl += 2; if (traits.has("weak")) sk.strength.lvl -= 2;
+  if (traits.has("athletic")) sk.fitness.lvl += 2; if (traits.has("unfit")) sk.fitness.lvl -= 2;
+  return {
+    name, occ, traits, sk, books: {},
+    x: 0, y: 0, face: 0.8, vx: 0, vy: 0, moving: false, walkPhase: 0,
+    hunger: 0.05, thirst: 0.05, fatigue: 0.15, endurance: 1, boredom: 10, unhappy: 5, panic: 0,
+    pain: 0, sickness: 0, health: 100, painkill: 0, fullT: 0,
+    wounds: [], infected: false, infT: 0, infDur: 0,
+    inv: [], bag: null, weapon: null,
+    sneaking: false, running: false, flash: true, aiming: false,
+    action: null, queue: [], swing: null, swingCd: 0, shoveCd: 0, stagger: 0,
+    sleeping: false, kills: 0, alive: true, speech: null,
+  };
+}
+
+// ---------- timed actions ----------
+function act(name, dur, done, opt = {}){
+  P.queue.push({ name, dur, t: 0, done, ...opt });
+}
+function cancelActions(reason){
+  if (P.action || P.queue.length){ if (reason && P.action) say(reason); }
+  P.action = null; P.queue = [];
+  if (P.sleeping) wake();
+}
+function actionSpeed(){
+  const v = G.vit;
+  let m = 1 - 0.08 * (v.tired || 0) - 0.06 * (v.unhappy || 0) - 0.05 * (v.pain || 0) - 0.05 * (v.winded || 0);
+  return Math.max(0.35, m);
+}
+function stepAction(dt){
+  if (!P.action && P.queue.length) P.action = P.queue.shift();
+  const a = P.action; if (!a) return;
+  a.t += dt * actionSpeed();
+  if (a.tick) a.tick(dt);
+  if (a.noiseEvery){ a.nt = (a.nt || 0) + dt; if (a.nt > a.noiseEvery){ a.nt = 0; noise(P.x, P.y, a.noise); } }
+  if (a.t >= a.dur){ P.action = null; a.done && a.done(); if (!P.queue.length && typeof renderInv === 'function' && panelOpen('inv')) renderInv(); }
+}
+
+// ---------- speech / log ----------
+function say(msg, col){
+  const log = document.getElementById("log");
+  const d = document.createElement("div"); d.textContent = msg; if (col) d.style.color = col;
+  log.appendChild(d); while (log.children.length > 4) log.removeChild(log.firstChild);
+  setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 1000); }, 4500);
+}
+function bubble(msg){ P.speech = { msg, t: 3 }; }
+
+// ---------- needs (dm = game minutes elapsed, dt = sim seconds) ----------
+function stepNeeds(dt, dm){
+  const tr = P.traits, inside = roomId[ix(Math.floor(P.x), Math.floor(P.y))] >= 0;
+  const sleepM = P.sleeping ? 0.5 : 1;
+  P.hunger += 0.00055 * dm * (tr.has("lighteat") ? .75 : tr.has("hearty") ? 1.25 : 1) * (P.running ? 1.4 : 1) * sleepM;
+  P.thirst += 0.0008 * dm * (P.running ? 1.5 : 1) * sleepM;
+  if (P.sleeping){
+    const bed = P.sleepOn === "bed" ? 1 : 0.65;
+    P.fatigue -= dm / (7 * 60) * bed;
+  } else P.fatigue += dm / (17 * 60) * (tr.has("restless") ? 1.2 : 1);
+  if (!P.sleeping){
+    const busy = P.action && P.action.fun;
+    if (busy) P.boredom += busy * dm;
+    else if (inside) P.boredom += 0.06 * dm;
+    else P.boredom -= (P.moving ? 0.08 : 0.03) * dm;
+  }
+  if (P.boredom > 50) P.unhappy += 0.02 * dm * (P.boredom - 50) / 50;
+  if (P.pain > 30) P.unhappy += 0.006 * dm;
+  if (P.fullT > 0) P.fullT -= dm;
+
+  // endurance (sim time)
+  const fit = skill("fitness");
+  if (P.running && P.moving) P.endurance -= 0.016 * dt * (1.25 - fit * 0.05);
+  else if (!P.swing) P.endurance += (P.moving ? 0.03 : P.resting ? 0.11 : 0.055) * dt * (0.75 + fit * 0.05);
+
+  // panic (sim time)
+  const desens = Math.max(0.3, 1 - daysSurvived() * 0.1);
+  const pm = tr.has("brave") ? 0.5 : tr.has("cowardly") ? 1.8 : 1;
+  if (G.visZ > 0) P.panic += Math.min(G.visZ, 6) * 4 * dt * pm * desens;
+  else P.panic -= 3 * dt;
+
+  // wounds
+  let bleeding = 0, pain = 0;
+  for (const w of P.wounds){
+    const def = WOUND[w.type];
+    w.age += dm;
+    if (w.type === "scratch" && w.age > 40) w.bleed = false;
+    if (w.bleed && !w.bandaged){ P.health -= def.bleed * dm; bleeding++; }
+    pain += def.pain * (w.bandaged ? 0.5 : 1) + (w.inf ? 12 : 0) + (w.glassIn ? 10 : 0);
+    if (!w.inf && !w.bandaged && w.age > 180 && R() < 0.0018 * dm) w.inf = true;
+    if (!w.inf && w.bandaged && w.dirty && R() < 0.0012 * dm) w.inf = true;
+    if (w.inf) P.health -= 0.006 * dm;
+    if (!w.inf && !w.glassIn) w.heal -= dm / 60 * (w.bandaged ? 1.4 : 1) * (1 + skill("firstaid") * 0.06);
+  }
+  P.wounds = P.wounds.filter(w => { if (w.heal <= 0){ say(`Your ${PARTNAME[w.part].toLowerCase()} has healed.`); return false; } return true; });
+  if (P.infected){
+    P.infT += dm;
+    const p = P.infT / P.infDur;
+    if (p > 0.3) pain += 10 * p;
+    if (p > 0.7) P.health -= 0.06 * dm * (p - 0.6) * 4;
+    if (p >= 1){ die("The fever burned through you, and something else got up in your place."); return; }
+  }
+  if (P.painkill > 0){ P.painkill -= dm; pain *= 0.35; }
+  P.pain = pain;
+  P.sickness = Math.max(0, P.sickness - 0.0005 * dm);
+  if (P.sickness > 0.75) P.health -= 0.02 * dm;
+  if (P.hunger >= 1) P.health -= 0.03 * dm;
+  if (P.thirst >= 1) P.health -= 0.06 * dm;
+  if (P.fatigue >= 1 && !P.sleeping){ say("You collapse from exhaustion."); startSleep("floor"); }
+  if (!bleeding && P.hunger < 0.6 && P.thirst < 0.6 && !P.infected) P.health += 0.02 * dm * (1 + skill("firstaid") * 0.05) * (P.sleeping ? 2 : 1);
+
+  P.hunger = clamp(P.hunger, 0, 1); P.thirst = clamp(P.thirst, 0, 1); P.fatigue = clamp(P.fatigue, 0, 1);
+  P.endurance = clamp(P.endurance, 0, 1); P.boredom = clamp(P.boredom, 0, 100); P.unhappy = clamp(P.unhappy, 0, 100);
+  P.panic = clamp(P.panic, 0, 100); P.health = Math.min(100, P.health);
+  if (P.health <= 0) die(bleeding ? "You bled out." : P.thirst >= 1 ? "You died of thirst." : P.hunger >= 1 ? "You starved." : "Your body gave out.");
+  // food in pockets keeps aging
+  ageList(allCarried(), dm);
+}
+
+function feverLevel(){
+  let f = 0;
+  if (P.wounds.some(w => w.inf)) f = 0.4;
+  if (P.infected){ const p = P.infT / P.infDur; if (p > 0.45) f = Math.max(f, (p - 0.3) * 1.3); }
+  return f;
+}
+function queasyLevel(){
+  let q = P.sickness;
+  if (P.infected){ const p = P.infT / P.infDur; if (p > 0.2) q = Math.max(q, p * 0.95); }
+  return q;
+}
+
+// ---------- vitals (status icons) ----------
+const lv = (v, th) => { let l = 0; for (const t of th) if (v >= t) l++; return l; };
+const VITALS = [
+  { id:"hungry", ic:"🍽️", val:() => P.hunger, th:[.15,.25,.45,.7], n:["Peckish","Hungry","Very hungry","Starving"], d:["A snack wouldn't hurt.","You should eat soon.","You feel weak.","You are losing health."] },
+  { id:"thirsty", ic:"💧", val:() => P.thirst, th:[.12,.25,.5,.75], n:["Slightly thirsty","Thirsty","Parched","Dying of thirst"], d:["Drink something soon.","Find water.","Your head is pounding.","You will die without water."] },
+  { id:"tired", ic:"💤", val:() => P.fatigue, th:[.6,.7,.8,.9], n:["Drowsy","Tired","Very tired","Ready to drop"], d:["Slightly slower.","Actions and swings are slower.","Much slower and weaker.","You'll pass out soon."] },
+  { id:"winded", ic:"💨", val:() => 1 - P.endurance, th:[.25,.5,.75,.9], n:["Winded","Out of breath","Exhausted","Spent"], d:["Ease off a little.","Moving and swinging slower.","Weak swings, slow feet.","Stop and rest now."] },
+  { id:"heavy", ic:"🎒", val:() => totalLoad() / carryCap(), th:[1,1.25,1.5,1.75], n:["Heavy load","Very heavy load","Overloaded","Crushing load"], d:["Slightly slower.","Slower and tiring.","Much slower.","Barely moving."] },
+  { id:"panic", ic:"😨", val:() => P.panic, th:[10,30,60,85], n:["Nervous","Scared","Panicked","Terrified"], d:["Hands slightly unsteady.","Swings miss more often.","Badly shaken.","You can barely fight."] },
+  { id:"bored", ic:"🥱", val:() => P.boredom, th:[25,50,70,90], n:["Restless","Bored","Very bored","Climbing the walls"], d:["Find something to do.","Getting to you.","Read, watch TV, go outside.","This is wearing you down."] },
+  { id:"unhappy", ic:"😞", val:() => P.unhappy, th:[20,40,60,80], n:["Down","Unhappy","Miserable","Despairing"], d:["","Everything takes longer.","You can barely focus.","What's the point?"] },
+  { id:"pain", ic:"🤕", val:() => P.pain, th:[8,22,40,65], n:["Sore","In pain","Severe pain","Agony"], d:["","Actions slower.","Much slower.","You can hardly move."] },
+  { id:"bleed", ic:"🩸", val:() => P.wounds.filter(w => w.bleed && !w.bandaged).length, th:[1,2,3,4], n:["Bleeding","Bleeding badly","Heavy bleeding","Bleeding out"], d:["Bandage the wound (H).","Bandage your wounds (H).","Bandage now (H).","You are dying (H)."] },
+  { id:"hurt", ic:"✚", val:() => 100 - P.health, th:[15,35,55,75], n:["Hurt","Badly hurt","Critical","Dying"], d:["","","","Rest, eat, treat wounds."] },
+  { id:"queasy", ic:"🤢", val:queasyLevel, th:[.25,.45,.65,.85], n:["Queasy","Nauseous","Sick","Gravely ill"], d:["Something doesn't agree with you.","You feel awful.","Very unwell.","..."] },
+  { id:"fever", ic:"🌡️", val:feverLevel, th:[.3,.5,.7,.9], n:["Feverish","Fever","High fever","Burning up"], d:["Is it a wound infection?","Check your wounds.","Something is very wrong.","..."] },
+];
+function computeVitals(){
+  const v = {};
+  for (const d of VITALS) v[d.id] = lv(d.val(), d.th);
+  G.vit = v;
+}
+function moveMult(){
+  const v = G.vit;
+  return Math.max(0.3, 1 - 0.12 * v.heavy - 0.08 * v.winded - 0.05 * v.pain - 0.05 * v.tired);
+}
+function dmgMult(){
+  const v = G.vit;
+  let m = 1 - 0.07 * v.tired - 0.13 * v.winded - (v.hungry >= 3 ? 0.1 : 0);
+  return Math.max(0.3, m) * (0.75 + skill("strength") * 0.05);
+}
+
+function daysSurvived(){ return (G.min - G.startMin) / 1440; }
+
+// ---------- eating, drinking, reading, medicine ----------
+function canUse(it){
+  const d = ITEMS[it.id];
+  if (d.cat === "food" || d.cat === "drink"){
+    if (d.opener && !findTag("opener")) return "Need a can opener or knife";
+    return true;
+  }
+  if (d.cat === "book" || d.cat === "mag") return P.sleeping ? "Asleep" : true;
+  if (d.tags.includes("painkiller")) return true;
+  if (d.rip) return true;
+  if (d.smoke) return true;
+  return false;
+}
+function useLabel(it){
+  const d = ITEMS[it.id];
+  if (d.cat === "food") return "Eat"; if (d.cat === "drink") return "Drink";
+  if (d.cat === "book" || d.cat === "mag") return "Read";
+  if (d.tags.includes("painkiller")) return "Take a pill"; if (d.rip) return "Rip into rags";
+  if (d.smoke) return "Smoke"; return null;
+}
+function useItem(it){
+  const d = ITEMS[it.id];
+  if (d.cat === "food" || d.cat === "drink"){
+    act(d.cat === "food" ? "Eating" : "Drinking", d.cat === "food" ? 5 : 3, () => {
+      if (!allCarried().includes(it)) return;
+      const fs = freshState(it); let k = 1;
+      if (fs === "stale"){ k = 0.7; P.unhappy += 8; }
+      if (fs === "rotten"){ k = 0.4; P.unhappy += 18; P.sickness += 0.55; say("That tasted rotten."); }
+      P.hunger -= (d.hun || 0) * k; P.thirst -= (d.thi || 0) * k;
+      P.unhappy += d.unh || 0; P.boredom += d.bor || 0;
+      if (P.hunger <= 0.01 && d.cat === "food") P.fullT = 120;
+      const emp = d.empty;
+      if (d.uses){ useOne(it); } else { removeItem(it); if (emp) giveItem(makeItem(emp)); }
+      P.hunger = clamp(P.hunger, 0, 1); P.thirst = clamp(P.thirst, 0, 1); P.unhappy = clamp(P.unhappy, 0, 100);
+    });
+  } else if (d.cat === "book"){
+    act("Reading", 90, () => { P.books[d.skill] = true; say(`You finish "${d.n}". ${SKILLS[d.skill].n} experience is tripled up to level 6.`, "#d6f2c4"); removeItem(it); }, { fun: -0.5 });
+  } else if (d.cat === "mag"){
+    act("Reading", d.long ? 60 : 25, () => { P.boredom += d.bor; P.unhappy += d.unh; P.boredom = clamp(P.boredom, 0, 100); P.unhappy = clamp(P.unhappy, 0, 100); removeItem(it); }, { fun: -0.3 });
+  } else if (d.tags.includes("painkiller")){
+    act("Taking painkillers", 2, () => { P.painkill = 240; useOne(it); say("The pain starts to dull."); });
+  } else if (d.rip){
+    act("Ripping sheet", 4, () => { removeItem(it); for (let i = 0; i < d.rip; i++) giveItem(makeItem("rags")); });
+  } else if (d.smoke){
+    act("Smoking", 6, () => { P.unhappy = clamp(P.unhappy - 8, 0, 100); useOne(it); noise(P.x, P.y, 2); });
+  }
+}
+
+// ---------- injuries ----------
+function addWound(part, type, fromZombie){
+  const def = WOUND[type];
+  P.wounds.push({ part, type, bleed: true, bandaged: false, dirty: false, inf: false, age: 0, heal: def.heal * rf(.8, 1.2), glassIn: type === "glass" && R() < .6 });
+  if (fromZombie){
+    const chance = CFG.infect[type] || 0;
+    if (!P.infected && R() < chance){ P.infected = true; P.infT = 0; P.infDur = rf(CFG.infectHours[0], CFG.infectHours[1]) * 60; }
+  }
+  P.panic = Math.min(100, P.panic + 15);
+}
+function bandage(w){
+  const b = findTag("bandage"); if (!b) return say("You need a bandage or ripped sheets.");
+  act("Bandaging", Math.max(2, 6 - skill("firstaid") * 0.5), () => {
+    if (!P.wounds.includes(w)) return;
+    w.bandaged = true; w.bleed = false; w.dirty = R() < (ITEMS[b.id].dirtyRisk || 0);
+    useOne(b); addXP("firstaid", 12);
+  });
+}
+function disinfect(w){
+  const d = findTag("disinfect"); if (!d) return say("You need disinfectant or strong alcohol.");
+  act("Disinfecting", 3, () => { if (!P.wounds.includes(w)) return; w.inf = false; w.clean = true; useOne(d); P.pain += 5; addXP("firstaid", 8); });
+}
+function removeGlass(w){
+  const tw = findTag("tweezers");
+  act("Removing glass", tw ? 4 : 9, () => {
+    if (!P.wounds.includes(w)) return;
+    w.glassIn = false; addXP("firstaid", 10);
+    if (!tw && R() < 0.4){ w.bleed = true; w.bandaged = false; say("Digging it out by hand reopens the cut."); }
+  });
+}
+function stitch(w){
+  const n = findTag("suture"); if (!n) return say("You need a needle and thread.");
+  act("Stitching", Math.max(4, 12 - skill("firstaid")), () => { if (!P.wounds.includes(w)) return; w.heal *= 0.5; w.stitched = true; w.bleed = false; useOne(n); P.pain += 8; addXP("firstaid", 20); });
+}
+
+// ---------- sleep ----------
+function startSleep(on){
+  if (P.fatigue < 0.3 && on !== "floor") return say("You aren't tired enough to sleep.");
+  cancelActions(); P.sleeping = true; P.sleepOn = on; G.speedIdx = 0;
+  say(on === "bed" ? "You lie down and close your eyes." : "You curl up and try to sleep.");
+}
+function wake(reason){
+  P.sleeping = false;
+  if (reason) say(reason, "#ff9a8a");
+  if (P.sleepOn !== "bed") P.pain += 6;
+}
+// ============================================================
+// Part 4: zombies, sound, combat, world interactions, director
+// ============================================================
+let Z = [];              // zombies
+let flow = null, flowT = 0;
+const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return Math.abs(d); };
+
+function darkness(){
+  const h = (G.min % 1440) / 60;
+  if (h >= 7 && h < 19) return 0;
+  if (h >= 19 && h < 22) return (h - 19) / 3 * 0.8;
+  if (h >= 4 && h < 7) return (7 - h) / 3 * 0.8;
+  return 0.8;
+}
+const isNight = () => darkness() > 0.45;
+const powerOn = () => G.min < G.powerOff;
+const waterOn = () => G.min < G.waterOff;
+
+// ---------- sound ----------
+function noise(x, y, r){ G.sounds.push({ x, y, r, t: G.simT }); }
+
+// ---------- spawning ----------
+function spawnZombies(n){
+  let tries = 0;
+  while (Z.length < n && tries++ < n * 40){
+    const x = ri(1, W - 2), y = ri(1, H - 2);
+    if (solidZ(x, y) || tile[ix(x, y)] === T.DOOR || tile[ix(x, y)] === T.WIN) continue;
+    if (Math.hypot(x - P.x, y - P.y) < 16) continue;
+    if (bldId[ix(x, y)] >= 0 && bldId[ix(x, y)] === G.startBld) continue;
+    const forest = x < 5 || y < 5 || x > 94 || y > 94;
+    if (forest && R() < 0.75) continue;
+    const store = bldId[ix(x, y)] >= 0 && buildings[bldId[ix(x, y)]].kind !== "house";
+    const count = store && R() < 0.5 ? 2 : 1;
+    for (let k = 0; k < count; k++) Z.push(newZombie(x + 0.5 + rf(-.2, .2), y + 0.5 + rf(-.2, .2)));
+  }
+}
+const SHIRTS = ["#5b6b7a","#7a5b4f","#4f6a4c","#6e6e5a","#7c4a5a","#3f4f66","#8a7a5a","#5a4a6e","#a39a88","#46525a"];
+function newZombie(x, y){
+  const r = R();
+  const type = r < CFG.sprinterChance ? "sprint" : r < CFG.sprinterChance + 0.06 ? "crawl" : "shamble";
+  const hp = rf(1.5, 2.5);
+  return { x, y, hp, maxhp: hp, type, state: "idle", tx: x, ty: y, face: rf(0, 6.28), think: rf(0, .5),
+    mem: 0, down: 0, lunge: 0, atkCd: 0, bashT: 0, stuckT: 0, lx: x, ly: y, farT: rf(0, 2), lastHeard: 0,
+    spdJ: rf(.85, 1.15), col: pick(SHIRTS), pants: pick(["#2e3440","#4a3b2a","#3a3f2f","#2f2f3a"]),
+    fake: type !== "crawl" && R() < 0.04, alive: true, anim: rf(0, 6), groanT: rf(3, 12), id: Math.random() };
+}
+
+// ---------- movement with tile collision ----------
+function moveEnt(e, dx, dy, solid, r){
+  const nx = e.x + dx;
+  if (!collides(nx, e.y, r, solid)) e.x = nx;
+  const ny = e.y + dy;
+  if (!collides(e.x, ny, r, solid)) e.y = ny;
+}
+function collides(x, y, r, solid){
+  const x0 = Math.floor(x - r), x1 = Math.floor(x + r), y0 = Math.floor(y - r), y1 = Math.floor(y + r);
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++){
+    if (!solid(tx, ty)) continue;
+    const cx = clamp(x, tx, tx + 1), cy = clamp(y, ty, ty + 1);
+    if ((x - cx) ** 2 + (y - cy) ** 2 < r * r) return true;
+  }
+  return false;
+}
+
+// ---------- flow field toward the player (zombie pathing) ----------
+function buildFlow(){
+  const maxD = 42;
+  if (!flow) flow = new Int16Array(W * H);
+  flow.fill(-1);
+  const sx = Math.floor(P.x), sy = Math.floor(P.y);
+  const q = new Int32Array(W * H); let h = 0, t = 0;
+  flow[ix(sx, sy)] = 0; q[t++] = ix(sx, sy);
+  while (h < t){
+    const i = q[h++], x = i % W, y = (i / W) | 0, d = flow[i];
+    if (d >= maxD) continue;
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx = x + dx, ny = y + dy; if (!inb(nx, ny)) continue;
+      const j = ix(nx, ny); if (flow[j] >= 0 || !pathZ(nx, ny)) continue;
+      flow[j] = d + 1; q[t++] = j;
+    }
+  }
+}
+function flowNext(z){
+  const x = Math.floor(z.x), y = Math.floor(z.y), here = flow[ix(x, y)];
+  if (here < 0) return null;
+  let best = null, bd = here;
+  for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
+    const nx = x + dx, ny = y + dy; if (!inb(nx, ny)) continue;
+    const d = flow[ix(nx, ny)]; if (d < 0) continue;
+    if (dx && dy && (!pathZ(x + dx, y) || !pathZ(x, y + dy) || solidZ(x + dx, y) || solidZ(x, y + dy))) continue;
+    if (d < bd){ bd = d; best = [nx, ny]; }
+  }
+  return best;
+}
+
+// ---------- zombie AI ----------
+function zSightRange(){
+  let r = isNight() ? CFG.zSightNight * (P.flash ? 1.7 : 1) : CFG.zSightDay;
+  if (P.sneaking) r *= 0.55 - skill("sneak") * 0.03;
+  if (P.running && P.moving) r *= 1.2;
+  if (P.traits.has("inconsp")) r *= 0.75; if (P.traits.has("consp")) r *= 1.3;
+  if (G.rain) r *= 0.8;
+  return r;
+}
+function stepZombies(dt){
+  // spatial buckets for separation
+  const buckets = new Map();
+  for (const z of Z){ if (!z.alive) continue; const k = (z.x | 0) * 1000 + (z.y | 0); (buckets.get(k) || buckets.set(k, []).get(k)).push(z); }
+  const sight = zSightRange();
+  let anyChase = false, vis = 0;
+  for (const z of Z){
+    if (!z.alive) continue;
+    const dx = P.x - z.x, dy = P.y - z.y, d = Math.hypot(dx, dy);
+    if (G.vis && d < 14 && G.vis[ix(z.x | 0, z.y | 0)] && !z.fake) vis++;
+    if (d > 48){ farZombie(z, dt); continue; }
+    const ox = z.x, oy = z.y;
+    if (z.atkCd > 0) z.atkCd -= dt;
+    if (z.fake){ if (d < 1.7 && P.alive){ z.fake = false; z.down = 0.9; z.state = "chase"; z.mem = CFG.zMemory; groan(z, 1); } continue; }
+    if (z.down > 0){ z.down -= dt; z.lunge = 0; z.mv = 0; continue; }
+    // perception
+    z.think -= dt;
+    if (z.think <= 0 && P.alive){
+      z.think = 0.22 + R() * 0.15;
+      const ad = angDiff(Math.atan2(dy, dx), z.face);
+      if (d < sight && (ad < 1.15 || d < 2.2) && los(z.x, z.y, P.x, P.y)){
+        if (z.state !== "chase") groan(z, 0.6);
+        z.state = "chase"; z.mem = CFG.zMemory; z.tx = P.x; z.ty = P.y;
+      }
+      for (const s of G.sounds){
+        if (s.t <= z.lastHeard) continue;
+        const r = s.r * (G.rain ? 0.8 : 1);
+        if ((s.x - z.x) ** 2 + (s.y - z.y) ** 2 < r * r){
+          z.lastHeard = s.t;
+          if (z.state !== "chase"){ z.state = "investigate"; z.tx = s.x + rf(-1.5, 1.5); z.ty = s.y + rf(-1.5, 1.5); z.stuckT = 0; }
+        }
+      }
+    }
+    let spd = (z.type === "sprint" ? CFG.zSprint : z.type === "crawl" ? CFG.zCrawl : CFG.zShamble) * z.spdJ;
+    if (tile[ix(z.x | 0, z.y | 0)] === T.WIN) spd *= 0.3;
+    let mx = 0, my = 0;
+    if (z.state === "chase"){
+      anyChase = true;
+      z.mem -= dt;
+      if (z.mem <= 0){ z.state = "investigate"; z.tx = P.x + rf(-2, 2); z.ty = P.y + rf(-2, 2); }
+      // attack
+      if (d < 0.95 && P.alive){
+        z.face = Math.atan2(dy, dx);
+        if (z.lunge > 0){ z.lunge -= dt; if (z.lunge <= 0){ z.atkCd = rf(1.2, 1.7); if (d < 1.0) zombieHits(z); } }
+        else if (z.atkCd <= 0) z.lunge = z.type === "sprint" ? 0.3 : 0.5;
+        if (d > 0.55){ mx = dx / d; my = dy / d; spd *= 0.6; }
+      } else {
+        z.lunge = 0;
+        if (d < 1.6 && los(z.x, z.y, P.x, P.y)){ mx = dx / d; my = dy / d; }
+        else if (flow){
+          const nx = flowNext(z);
+          if (nx){
+            const f = feats.get(ix(nx[0], nx[1]));
+            if (f && solidZ(nx[0], nx[1])) { bash(z, f, dt); z.face = Math.atan2(nx[1] + .5 - z.y, nx[0] + .5 - z.x); }
+            else { const ex = nx[0] + .5 - z.x, ey = nx[1] + .5 - z.y, el = Math.hypot(ex, ey) || 1; mx = ex / el; my = ey / el; }
+          } else { mx = dx / (d || 1); my = dy / (d || 1); }
+        }
+      }
+    } else if (z.state === "investigate" || z.state === "wander"){
+      const ex = z.tx - z.x, ey = z.ty - z.y, el = Math.hypot(ex, ey);
+      if (el < 0.6){ z.state = "idle"; }
+      else {
+        mx = ex / el; my = ey / el;
+        if (z.state === "wander") spd *= 0.6;
+        // bump into a door or window on the way? bash it if investigating
+        const fx = Math.floor(z.x + mx * 0.6), fy = Math.floor(z.y + my * 0.6), f = feats.get(ix(fx, fy));
+        if (f && solidZ(fx, fy) && z.state === "investigate"){ bash(z, f, dt); mx = my = 0; }
+      }
+      z.stuckT += dt;
+      if (z.stuckT > 1.5){ if (Math.hypot(z.x - z.lx, z.y - z.ly) < 0.15) z.state = "idle"; z.lx = z.x; z.ly = z.y; z.stuckT = 0; }
+    } else {
+      if (R() < 0.004 * dt * 60){ z.state = "wander"; z.tx = z.x + rf(-5, 5); z.ty = z.y + rf(-5, 5); z.stuckT = 0; }
+    }
+    if (mx || my){
+      z.face = Math.atan2(my, mx);
+      moveEnt(z, mx * spd * dt, my * spd * dt, solidZ, 0.26);
+    }
+    // separation
+    const k0x = z.x | 0, k0y = z.y | 0;
+    for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++){
+      const b = buckets.get((k0x + ox) * 1000 + k0y + oy); if (!b) continue;
+      for (const o of b){
+        if (o === z || !o.alive || o.down > 0) continue;
+        const sx = z.x - o.x, sy = z.y - o.y, sd = sx * sx + sy * sy;
+        if (sd < 0.22 && sd > 0.0001){ const s = Math.sqrt(sd), push = (0.47 - s) * 0.5; moveEnt(z, sx / s * push, sy / s * push, solidZ, 0.26); }
+      }
+    }
+    const moved = Math.hypot(z.x - ox, z.y - oy);
+    z.mv = (z.mv || 0) * 0.85 + 0.15 * (moved / dt);
+    z.anim += moved * 2 * Math.PI / (z.type === "sprint" ? 1.6 : 0.85);
+    // groans
+    z.groanT -= dt;
+    if (z.groanT <= 0){ z.groanT = rf(6, 16); if (d < 14) groan(z, z.state === "chase" ? 0.5 : 0.22); }
+  }
+  G.visZ = vis;
+  G.anyChase = anyChase;
+  flowT -= dt;
+  if (anyChase && flowT <= 0){ buildFlow(); flowT = 0.35; }
+  if (!anyChase) flow = null;
+}
+function farZombie(z, dt){
+  z.farT -= dt; if (z.farT > 0) return;
+  z.farT = rf(1.5, 2.5);
+  for (const s of G.sounds){
+    if (s.t <= z.lastHeard) continue;
+    if ((s.x - z.x) ** 2 + (s.y - z.y) ** 2 < s.r * s.r){ z.lastHeard = s.t; z.state = "investigate"; z.tx = s.x + rf(-3, 3); z.ty = s.y + rf(-3, 3); }
+  }
+  if (z.state === "investigate"){
+    const ex = z.tx - z.x, ey = z.ty - z.y, el = Math.hypot(ex, ey);
+    if (el < 1) z.state = "idle";
+    else { const step = Math.min(el, CFG.zShamble * 2.2); moveEnt(z, ex / el * step, ey / el * step, solidZ, 0.26); }
+  }
+}
+function groan(z, vol){
+  const d = Math.hypot(P.x - z.x, P.y - z.y);
+  if (d < 16) sfx.groan(vol * (1 - d / 16), (z.x - P.x) - (z.y - P.y));
+}
+
+// zombies bashing doors, windows and barricades
+function bash(z, f, dt){
+  z.bashT += dt; if (z.bashT < 1.15) return;
+  z.bashT = 0;
+  noise(f.x + .5, f.y + .5, 9);
+  const d = Math.hypot(P.x - f.x, P.y - f.y);
+  if (d < 22) sfx.thump(1 - d / 22);
+  if (f.bar > 0){
+    f.barHp = (f.barHp ?? 9) - 1;
+    if (f.barHp <= 0){ f.bar--; f.barHp = 9; if (d < 20) say("A plank splinters and gives way."); }
+    return;
+  }
+  f.hp -= 1;
+  if (f.hp <= 0){
+    if (f.type === "door"){ f.open = true; f.broken = true; f.locked = false; if (d < 20) say("A door crashes open."); }
+    else { f.broken = true; f.glass = true; sfx.glass(1 - Math.min(1, d / 22)); }
+  }
+}
+
+function zombieHits(z){
+  const rear = angDiff(P.face, Math.atan2(z.y - P.y, z.x - P.x)) > 1.9;
+  const guard = P.traits.has("thinskin") ? 0.12 : 0.28;
+  sfx.hurt();
+  P.stagger = 0.35; cancelActions();
+  // drag down when swarmed
+  const around = Z.filter(o => o.alive && o.down <= 0 && !o.fake && Math.hypot(o.x - P.x, o.y - P.y) < 1.05).length;
+  if (around >= 3 && R() < 0.33){ die("They pulled you down. There were too many of them."); return; }
+  if (R() < guard){ bubble("Ugh!"); say("It grabs at you but doesn't break the skin."); P.panic = Math.min(100, P.panic + 8); return; }
+  const type = rear ? wpick([["scratch", 40], ["laceration", 25], ["bite", 35]]) : wpick([["scratch", 55], ["laceration", 30], ["bite", 15]]);
+  const part = wpick(PARTS.map(p => [p[0], p[2]]));
+  addWound(part, type, true);
+  addBlood(P.x, P.y, 2);
+  bubble(type === "bite" ? "No... no no no." : "Argh!");
+  say(`${WOUND[type].n} on your ${PARTNAME[part].toLowerCase()}.`, "#ff9a8a");
+}
+
+// ---------- player combat ----------
+function swingWeapon(){
+  if (P.swing || P.swingCd > 0 || P.sleeping || P.stagger > 0) return;
+  if (!P.weapon) return shove();
+  cancelActions();
+  const w = ITEMS[P.weapon.id];
+  const dur = w.spd / Math.max(0.5, actionSpeed()) * (P.endurance < 0.25 ? 1.35 : 1);
+  P.swing = { t: 0, dur, hit: false, kind: "swing" };
+  P.endurance -= w.end * (1.25 - skill("fitness") * 0.05);
+  sfx.swing();
+}
+function resolveSwing(){
+  const it = P.weapon; if (!it) return;
+  const w = ITEMS[it.id];
+  const targets = Z.filter(z => z.alive && Math.hypot(z.x - P.x, z.y - P.y) < w.range + 0.3 &&
+    angDiff(Math.atan2(z.y - P.y, z.x - P.x), P.face) < (z.down > 0 ? 1.1 : 0.9))
+    .sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y));
+  const hits = CFG.multiHit ? targets.slice(0, 3) : targets.slice(0, 1);
+  noise(P.x, P.y, hits.length ? 6 : 3);
+  for (const z of hits){
+    const sk = skill(w.skill);
+    let chance = z.down > 0 || z.fake ? 0.96 : 0.84 + sk * 0.02 - P.panic / 250 - (G.vit.winded >= 3 ? 0.15 : 0);
+    if (R() > chance){ bubble(pick(["Missed!", "Damn!"])); continue; }
+    const rear = angDiff(z.face, Math.atan2(P.y - z.y, P.x - z.x)) > 1.8;
+    let dmg = rf(w.dmg[0], w.dmg[1]) * (1 + 0.1 * sk) * dmgMult();
+    let crit = R() < (w.crit + sk * 0.03) * (rear ? 3 : 1);
+    if (crit) dmg *= 2.2;
+    if (z.down > 0) dmg *= 1.5;
+    z.hp -= dmg; z.lunge = 0; z.fake = false;
+    if (z.state !== "chase"){ z.state = "chase"; z.mem = CFG.zMemory; }
+    sfx.hit(crit);
+    addBlood(z.x, z.y, crit ? 3 : 1);
+    if (z.hp <= 0){ killZombie(z, w.skill); }
+    else if (z.down <= 0 && R() < w.kd + skill("strength") * 0.03 + (crit ? 0.3 : 0)){ z.down = rf(2.4, 4.2); }
+    else { const a = Math.atan2(z.y - P.y, z.x - P.x); moveEnt(z, Math.cos(a) * 0.3, Math.sin(a) * 0.3, solidZ, 0.26); z.atkCd = Math.max(z.atkCd, 0.6); }
+    addXP(w.skill, 2.5); addXP("strength", 0.4);
+    if (R() < 1 / (2 + w.cond / 8)){
+      it.cond--;
+      if (it.cond <= 0){ say(`Your ${w.n.toLowerCase()} breaks.`, "#ff9a8a"); removeItem(it); P.weapon = null; sfx.thump(0.8); break; }
+    }
+  }
+}
+function shove(){
+  if (P.shoveCd > 0 || P.sleeping || P.stagger > 0 || P.swing) return;
+  cancelActions();
+  P.shoveCd = 0.55;
+  const near = Z.filter(z => z.alive && !z.fake && Math.hypot(z.x - P.x, z.y - P.y) < 1.2 && angDiff(Math.atan2(z.y - P.y, z.x - P.x), P.face) < 1.1)
+    .sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y));
+  const downed = near.find(z => z.down > 0);
+  if (downed){ // stomp
+    P.swing = { t: 0, dur: 0.5, kind: "stomp", hit: true };
+    P.endurance -= 0.025;
+    const dmg = rf(0.3, 0.55) * (0.75 + skill("strength") * 0.05);
+    downed.hp -= dmg; downed.down = Math.max(downed.down, 1.2);
+    sfx.hit(false); addBlood(downed.x, downed.y, 1); noise(P.x, P.y, 3);
+    if (downed.hp <= 0) killZombie(downed, null);
+    addXP("strength", 0.5);
+    return;
+  }
+  P.swing = { t: 0, dur: 0.4, kind: "shove", hit: true };
+  P.endurance -= 0.045 * (1.25 - skill("fitness") * 0.05);
+  sfx.swing();
+  const z = near[0]; if (!z) return;
+  const a = Math.atan2(z.y - P.y, z.x - P.x);
+  const rear = angDiff(z.face, Math.atan2(P.y - z.y, P.x - z.x)) > 1.8;
+  moveEnt(z, Math.cos(a) * 0.7, Math.sin(a) * 0.7, solidZ, 0.26);
+  z.lunge = 0; z.atkCd = Math.max(z.atkCd, 0.8);
+  if (z.state !== "chase"){ z.state = "chase"; z.mem = CFG.zMemory; }
+  if (R() < 0.33 + skill("strength") * 0.035 + (rear ? 0.25 : 0)) z.down = rf(2, 3.5);
+  noise(P.x, P.y, 4);
+}
+function killZombie(z, sk){
+  z.alive = false; P.kills++;
+  G.corpses.push({ x: z.x, y: z.y, items: null, col: z.col, pants: z.pants, face: z.face });
+  P.unhappy = Math.min(100, P.unhappy + Math.max(0, 4 - daysSurvived() * 0.8));
+  if (sk) addXP(sk, 5);
+}
+
+// ---------- blood decals ----------
+function addBlood(x, y, n){
+  for (let i = 0; i < n; i++) G.blood.push({ x: x + rf(-.4, .4), y: y + rf(-.4, .4), r: rf(3, 7), a: rf(0, 6) });
+  if (G.blood.length > 900) G.blood.splice(0, 100);
+}
+
+// ---------- world interactions (E menu) ----------
+function hasBarricadeKit(){ const n = findId("nails"); return findTag("hammer") && findId("plank") && n && n.qty >= 2; }
+function useBarricadeKit(){ removeItem(findId("plank")); const n = findId("nails"); n.qty -= 2; if (n.qty <= 0) removeItem(n); }
+function occupied(x, y){ return Z.some(z => z.alive && (z.x | 0) === x && (z.y | 0) === y); }
+function triggerAlarm(f){
+  const b = buildings[bldId[ix(f.x, f.y)]];
+  if (b && b.alarm && !b.alarmUsed && powerOn()){
+    b.alarmUsed = true; G.alarms.push({ x: f.x + .5, y: f.y + .5, until: G.min + 25, t: 0 });
+    say("A house alarm starts screaming!", "#ff9a8a");
+  }
+}
+
+function interactions(){
+  const out = [];
+  const px = Math.floor(P.x), py = Math.floor(P.y);
+  const seen = new Set();
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
+    const x = px + dx, y = py + dy; if (!inb(x, y)) continue;
+    if (Math.hypot(x + .5 - P.x, y + .5 - P.y) > 1.55) continue;
+    const i = ix(x, y), f = feats.get(i), o = objs.get(i);
+    if (f && !seen.has(f)){ seen.add(f); featOptions(f, out); }
+    if (o) objOptions(o, out);
+  }
+  const corpse = G.corpses.find(c => Math.hypot(c.x - P.x, c.y - P.y) < 1.3);
+  if (corpse) out.push({ label: "Search the body", fn: openInv });
+  if (P.fatigue > 0.6 && !out.some(o => o.label.startsWith("Sleep"))) out.push({ label: "Sleep on the floor", fn: () => startSleep("floor") });
+  return out;
+}
+function featOptions(f, out){
+  const name = f.type === "door" ? "door" : "window";
+  const hammer = findTag("hammer"), pry = findTag("pry");
+  if (f.type === "door"){
+    if (f.broken) out.push({ label: "The door hangs off its hinges", off: true });
+    else if (f.open) out.push({ label: "Close door", fn: () => { if (occupied(f.x, f.y) || (Math.floor(P.x) === f.x && Math.floor(P.y) === f.y)) return say("Something is in the way."); f.open = false; sfx.door(); noise(f.x, f.y, 2); } });
+    else if (f.bar > 0) out.push({ label: "Door is barricaded", off: true });
+    else if (f.locked){
+      out.push({ label: "Locked", off: true });
+      out.push({ label: "Kick the door", fn: () => act("Kicking", 1.4, () => { sfx.thump(1); noise(f.x, f.y, 14); triggerAlarm(f);
+        if (R() < 0.18 + skill("strength") * 0.03){ f.locked = false; f.open = true; say("The door bursts open."); } else bubble("Come on..."); }) });
+      if (pry) out.push({ label: `Pry it open with ${ITEMS[pry.id].n.toLowerCase()}`, fn: () => act("Prying", 4, () => { noise(f.x, f.y, 6); triggerAlarm(f);
+        if (R() < 0.75){ f.locked = false; f.open = true; say("The lock gives."); } else say("It won't budge. Try again."); }, { noise: 5, noiseEvery: 1.5 }) });
+    } else out.push({ label: "Open door", fn: () => { f.open = true; sfx.door(); noise(f.x, f.y, 2); } });
+  } else {
+    if (!f.broken){
+      if (f.open) out.push({ label: "Close window", fn: () => { f.open = false; } });
+      else if (f.bar === 0) out.push({ label: "Open window", fn: () => act("Opening window", 1.2, () => {
+        if (f.locked){ say("It's locked from the inside."); return; } f.open = true; noise(f.x, f.y, 2); }) });
+      out.push({ label: "Smash window", fn: () => act("Smashing", 0.5, () => {
+        f.broken = true; f.glass = true; f.open = false; sfx.glass(1); noise(f.x + .5, f.y + .5, 18); triggerAlarm(f);
+        if (!P.weapon && R() < 0.5){ addWound(pick(["hand_l", "hand_r", "farm_r"]), "glass", false); say("The glass cuts your hand.", "#ff9a8a"); } }) });
+      if (!f.broken) out.push({ label: f.curtain ? "Open curtains" : "Close curtains", fn: () => { f.curtain = !f.curtain; } });
+    } else if (f.glass) out.push({ label: "Clear glass from the frame", fn: () => act("Clearing glass", 2.5, () => { f.glass = false; }) });
+    if ((f.open || f.broken) && f.bar === 0) out.push({ label: "Climb through window", fn: () => climbThrough(f) });
+  }
+  if (f.bar < 4 && !f.open && !(f.type === "door" && f.broken))
+    out.push({ label: `Barricade ${name} (plank, 2 nails)`, off: !hasBarricadeKit(), fn: () => {
+      if (!hasBarricadeKit()) return say("You need a hammer, a plank and 2 nails.");
+      act("Barricading", Math.max(2, 5 - skill("carpentry") * 0.3), () => { if (!hasBarricadeKit()) return; useBarricadeKit(); f.bar++; f.barHp = 9; f.curtain = false; addXP("carpentry", 10); }, { noise: 8, noiseEvery: 1.1 });
+    } });
+  if (f.bar > 0) out.push({ label: "Remove a plank", off: !(hammer || pry), fn: () => {
+    if (!(hammer || pry)) return say("You need a hammer or crowbar.");
+    act("Removing plank", 4, () => { if (f.bar <= 0) return; f.bar--; giveItem(makeItem("plank")); noise(f.x, f.y, 5); }); } });
+}
+function climbThrough(f){
+  let dest;
+  if (f.horiz) dest = P.y < f.y + 0.5 ? [f.x + .5, f.y + 1.5] : [f.x + .5, f.y - 0.5];
+  else dest = P.x < f.x + 0.5 ? [f.x + 1.5, f.y + .5] : [f.x - 0.5, f.y + .5];
+  if (solidP(Math.floor(dest[0]), Math.floor(dest[1]))) return say("Something is blocking the other side.");
+  act("Climbing through", 1.6, () => {
+    P.x = dest[0]; P.y = dest[1]; noise(P.x, P.y, 3);
+    if (f.broken && f.glass && R() < 0.55){ addWound(pick(["farm_l", "farm_r", "hand_l", "hand_r", "thigh_l", "thigh_r"]), "glass", false); say("Broken glass slices into you.", "#ff9a8a"); }
+  });
+}
+function objOptions(o, out){
+  const d = OBJ[o.type], hammer = findTag("hammer");
+  if (d.cont) out.push({ label: `Search ${d.n.toLowerCase()}`, fn: openInv });
+  if (d.water){
+    const has = o.water === -1 ? waterOn() : o.water > 0;
+    out.push({ label: `Drink from ${d.n.toLowerCase()}`, off: !has, fn: () => drinkFrom(o) });
+    const bottles = allCarried().filter(it => ITEMS[it.id].tags.includes("fillable"));
+    if (bottles.length) out.push({ label: `Fill ${bottles.length} empty bottle${bottles.length > 1 ? "s" : ""}`, off: !has, fn: () => fillFrom(o, bottles) });
+  }
+  if (d.toilet && !waterOn()){
+    out.push({ label: "Drink from the toilet tank", off: !(o.water > 0), fn: () => drinkFrom(o) });
+  }
+  if (d.bed){ out.push({ label: "Sleep in bed", fn: () => startSleep("bed") }); out.push({ label: "Lie down and rest", fn: rest }); }
+  if (d.seat){ out.push({ label: "Sit and rest", fn: rest }); out.push({ label: "Sleep on the sofa", fn: () => startSleep("sofa") }); }
+  if (d.tv) out.push({ label: "Watch TV", off: !powerOn(), fn: watchTV });
+  if (d.dis) out.push({ label: `Take apart ${d.n.toLowerCase()} (hammer)`, off: !hammer, fn: () => {
+    if (!findTag("hammer")) return say("You need a hammer.");
+    act("Taking apart", 8 - skill("carpentry") * 0.4, () => disassemble(o), { noise: 7, noiseEvery: 1 });
+  } });
+}
+function drinkFrom(o){
+  act("Drinking", 3, () => {
+    if (o.water === -1 && !waterOn()) o.water = 0;
+    if (o.water === 0) return say("Nothing comes out.");
+    if (o.water > 0){ o.water--; if (OBJ[o.type].toilet && R() < 0.3) P.sickness += 0.2; }
+    P.thirst = 0;
+  });
+}
+function fillFrom(o, bottles){
+  act("Filling bottles", 2 * bottles.length, () => {
+    for (const b of bottles){
+      if (o.water === 0) break;
+      if (o.water === -1 && !waterOn()){ o.water = 0; break; }
+      if (o.water > 0) o.water--;
+      const inBag = P.bag && P.bag.items.includes(b);
+      removeItem(b); const nw = makeItem("water");
+      if (inBag) P.bag.items.push(nw); else P.inv.push(nw);
+    }
+  });
+}
+function rest(){ act("Resting", 25, () => {}, { tick: () => { P.resting = true; } }); }
+function watchTV(){
+  if (!powerOn()) return say("No power.");
+  const day = Math.floor(G.min / 1440), lines = BROADCAST[day];
+  act("Watching TV", 45, () => { P.unhappy = clamp(P.unhappy - 6, 0, 100); }, { fun: -1.2, tick: () => {} });
+  if (lines) say(`TV: "${pick(lines)}"`, "#cfe0ff");
+  else if (day > 17) say("TV: a test card and a thin, endless tone.", "#cfe0ff");
+  else say("TV: an old sitcom rerun. Canned laughter.", "#cfe0ff");
+  noise(P.x, P.y, 6);
+}
+function disassemble(o){
+  const i = ix(o.x, o.y);
+  if (!objs.has(i)) return;
+  if (o.items && o.items.length){ const fl = floorItems.get(i) || []; fl.push(...o.items); floorItems.set(i, fl); }
+  objs.delete(i);
+  const planks = 1 + (R() < 0.3 + skill("carpentry") * 0.1 ? 1 : 0);
+  for (let k = 0; k < planks; k++) giveItem(makeItem("plank"));
+  const nails = ri(0, 3);
+  if (nails){ const n = findId("nails"); if (n) n.qty += nails; else { const it = makeItem("nails"); it.qty = nails; giveItem(it); } }
+  addXP("carpentry", 8);
+  say(`You get ${planks} plank${planks > 1 ? "s" : ""}${nails ? ` and ${nails} nails` : ""}.`);
+}
+
+// ---------- the director: utilities, helicopter, alarms, distant gunfire, weather ----------
+function stepDirector(dt, dm){
+  if (!G.powerMsg && !powerOn()){ G.powerMsg = true; say("Every light in town dies at once. The power is out.", "#ffd27a"); sfx.thump(0.6); }
+  if (!G.waterSet && !waterOn()){ G.waterSet = true; for (const o of objs.values()) if (o.water === -1) o.water = OBJ[o.type].toilet ? ri(2, 4) : ri(0, 3); }
+  // helicopter
+  if (!G.heliDone && G.min >= G.heliAt){ G.heli = { until: G.heliAt + 150, t: 0 }; G.heliDone = true; say("A helicopter thunders in low over the rooftops...", "#ffd27a"); }
+  if (G.heli){
+    G.heli.t -= dt;
+    if (G.heli.t <= 0){
+      G.heli.t = 6;
+      const outside = roomId[ix(P.x | 0, P.y | 0)] < 0;
+      if (outside){ noise(P.x, P.y, 34); if (R() < 0.3) say("It's circling right above you.", "#ffd27a"); }
+      else noise(P.x + rf(-20, 20), P.y + rf(-20, 20), 26);
+      sfx.heli(outside ? 1 : 0.5);
+    }
+    if (G.min > G.heli.until){ G.heli = null; say("The rotor noise fades away. They're not coming back."); }
+  }
+  // alarms
+  for (const a of G.alarms){
+    if (G.min > a.until) continue;
+    a.t -= dt; if (a.t <= 0){ a.t = 1; noise(a.x, a.y, 38); sfx.alarm(1 - Math.min(1, Math.hypot(a.x - P.x, a.y - P.y) / 40)); }
+  }
+  // distant gunfire pulls hordes around the map
+  G.metaT -= dm;
+  if (G.metaT <= 0){
+    G.metaT = rf(180, 600);
+    const a = rf(0, 6.28), r = rf(28, 45);
+    const x = clamp(P.x + Math.cos(a) * r, 2, W - 2), y = clamp(P.y + Math.sin(a) * r, 2, H - 2);
+    noise(x, y, 32); sfx.gunshot(); if (R() < 0.5) say("Gunshots, somewhere far off.");
+  }
+  // weather
+  G.weatherT -= dm;
+  if (G.weatherT <= 0){
+    if (G.rain){ G.rain = false; G.weatherT = rf(240, 900); }
+    else if (R() < 0.35){ G.rain = true; G.weatherT = rf(60, 240); }
+    else G.weatherT = rf(120, 400);
+  }
+  G.sounds = G.sounds.filter(s => G.simT - s.t < 1.5);
+}
+// ============================================================
+// Part 5: rendering (isometric), field of view, lighting
+// ============================================================
+const cv = document.getElementById("game"), ctx = cv.getContext("2d");
+const lightCv = document.createElement("canvas"), lctx = lightCv.getContext("2d");
+let CW = 0, CH = 0, DPR = 1, zoom = 1, hw = 32, hh = 16, camX = 0, camY = 0;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, window.__lowRes ? 1 : 1.5);
+  CW = innerWidth; CH = innerHeight;
+  cv.width = CW * DPR; cv.height = CH * DPR; lightCv.width = cv.width; lightCv.height = cv.height;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); lctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener("resize", resize); resize();
+
+function S(x, y, h = 0){ return [(x - y) * hw - camX + CW / 2, (x + y) * hh - camY + CH / 2 - h * zoom]; }
+function toWorld(sx, sy){
+  const a = (sx - CW / 2 + camX) / hw, b = (sy - CH / 2 + camY) / hh;
+  return [(a + b) / 2, (b - a) / 2];
+}
+
+// ---------- field of view ----------
+function computeVis(){
+  if (!G.vis) G.vis = new Uint8Array(W * H);
+  G.vis.fill(0);
+  const night = isNight();
+  let R0 = night ? CFG.playerSightNight : CFG.playerSightDay;
+  if (P.traits.has("eagle")) R0 += 3; if (P.traits.has("shortsight")) R0 *= 0.75;
+  const flashR = P.flash && night ? CFG.flashRange : 0;
+  const Rm = Math.max(R0, flashR);
+  const prox = P.traits.has("keenhear") ? 3.4 : 2.2;
+  const px = Math.floor(P.x), py = Math.floor(P.y);
+  const r = Math.ceil(Rm) + 1;
+  for (let ty = py - r; ty <= py + r; ty++) for (let tx = px - r; tx <= px + r; tx++){
+    if (!inb(tx, ty)) continue;
+    const cx = tx + .5, cy = ty + .5, dx = cx - P.x, dy = cy - P.y, d = Math.hypot(dx, dy);
+    if (d > Rm) continue;
+    let ok = d < prox;
+    if (!ok){
+      const ad = angDiff(Math.atan2(dy, dx), P.face);
+      if (ad < 1.25 && d <= R0) ok = true;
+      else if (flashR && ad < 0.5 && d <= flashR) ok = true;
+    }
+    if (!ok || P.sleeping) continue;
+    if (d < 1.2 || los(P.x, P.y, cx, cy)){ G.vis[ix(tx, ty)] = 1; explored[ix(tx, ty)] = 1; }
+  }
+}
+
+// ---------- palette ----------
+const SIDING = ["#a9b8c2", "#cdbf8f", "#9fae8e", "#a3574a", "#d9d6cc", "#8c97a8", "#b9a17c"];
+const FLOORC = { kitchen: ["#c8c3b4", "#b5af9e"], bathroom: ["#b9cbd2", "#aabdc4"], bedroom: ["#7f6f8a", "#796984"], living: ["#8a6e4e", "#836749"],
+  grocery: ["#bdbcb2", "#b2b1a7"], pharmacy: ["#cfd4d0", "#c4c9c5"], hardware: ["#9b9586", "#918b7c"] };
+const _sc = new Map();
+function shade(hex, f){
+  if (hex[0] !== "#") hex = rgbToHex(hex);
+  const key = hex + (f * 100 | 0);
+  let v = _sc.get(key); if (v) return v;
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(k => clamp(Math.round(k * f), 0, 255).toString(16).padStart(2, "0"));
+  v = "#" + c.join(""); _sc.set(key, v); return v;
+}
+const hash = (x, y) => { let h = x * 374761393 + y * 668265263; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) >>> 0) / 4294967296; };
+
+function diamond(tx, ty, h, col){
+  const a = S(tx, ty, h), b = S(tx + 1, ty, h), c = S(tx + 1, ty + 1, h), d = S(tx, ty + 1, h);
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); ctx.fill();
+}
+// box inside a tile, with margin m, from height z0 to z1
+function box(tx, ty, m, z0, z1, col, alpha = 1, sx = 1, sy = 1, topCol, noL, noR){
+  const x0 = tx + m * sx, y0 = ty + m * sy, x1 = tx + 1 - m * sx, y1 = ty + 1 - m * sy;
+  ctx.globalAlpha = alpha;
+  const pL0 = S(x0, y1, z0), pB0 = S(x1, y1, z0), pR0 = S(x1, y0, z0);
+  const pL1 = S(x0, y1, z1), pB1 = S(x1, y1, z1), pR1 = S(x1, y0, z1), pT1 = S(x0, y0, z1);
+  if (!noL){ ctx.fillStyle = shade(col, 0.72);
+  ctx.beginPath(); ctx.moveTo(pL0[0], pL0[1]); ctx.lineTo(pB0[0], pB0[1]); ctx.lineTo(pB1[0], pB1[1]); ctx.lineTo(pL1[0], pL1[1]); ctx.closePath(); ctx.fill(); }
+  if (!noR){ ctx.fillStyle = shade(col, 0.88);
+  ctx.beginPath(); ctx.moveTo(pB0[0], pB0[1]); ctx.lineTo(pR0[0], pR0[1]); ctx.lineTo(pR1[0], pR1[1]); ctx.lineTo(pB1[0], pB1[1]); ctx.closePath(); ctx.fill(); }
+  ctx.fillStyle = topCol || col;
+  ctx.beginPath(); ctx.moveTo(pT1[0], pT1[1]); ctx.lineTo(pR1[0], pR1[1]); ctx.lineTo(pB1[0], pB1[1]); ctx.lineTo(pL1[0], pL1[1]); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+// planks across the visible faces of a door/window
+function planks(tx, ty, n, alpha){
+  ctx.globalAlpha = alpha; ctx.strokeStyle = "#9c7a4a"; ctx.lineWidth = 4 * zoom;
+  for (let k = 0; k < n; k++){
+    const z = 10 + k * 8;
+    const a = S(tx, ty + 1, z), b = S(tx + 1, ty + 1, z + 6), c = S(tx + 1, ty, z + 6);
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function groundColor(t, x, y){
+  const n = hash(x, y);
+  switch (t){
+    case T.GRASS: case T.TREE: return n < .5 ? "#4f6a3a" : n < .85 ? "#56713f" : "#5e7744";
+    case T.ROAD: return n < .5 ? "#3e4144" : "#43464a";
+    case T.WALK: return n < .5 ? "#8e8c86" : "#97958e";
+    case T.LOT: return "#55585b";
+    case T.DIRT: return n < .5 ? "#6b5a40" : "#725f43";
+    default: {
+      const r = rooms[roomId[ix(x, y)]];
+      const pal = r ? FLOORC[r.type] : ["#7a7468", "#746e62"];
+      return pal[(x + y) & 1];
+    }
+  }
+}
+
+// ---------- characters ----------
+// ---------- main draw ----------
+function render(){
+  zoom = G.zoom; hw = CFG.TW / 2 * zoom; hh = CFG.TH / 2 * zoom;
+  camX = (P.x - P.y) * hw; camY = (P.x + P.y) * hh - 20 * zoom;
+  ctx.fillStyle = "#0d0f12"; ctx.fillRect(0, 0, CW, CH);
+  const px = Math.floor(P.x), py = Math.floor(P.y);
+  const span = Math.ceil(Math.max(CW / hw, CH / hh) * 0.75) + 3;
+  const x0 = Math.max(0, px - span), x1 = Math.min(W - 1, px + span), y0 = Math.max(0, py - span), y1 = Math.min(H - 1, py + span);
+  const myB = (tile[ix(px, py)] === T.FLOOR || tile[ix(px, py)] === T.DOOR) ? bldId[ix(px, py)] : -1;
+  const pdepth = P.x + P.y;
+  const onScreen = (tx, ty) => { const [sx, sy] = S(tx + .5, ty + .5); return sx > -80 && sx < CW + 80 && sy > -120 && sy < CH + 120; };
+
+  // pass 1: ground, batched by colour into paths
+  const batches = new Map(), dk1 = new Path2D(), dk2 = new Path2D();
+  const addD = (path, tx, ty) => { const a = S(tx, ty), b = S(tx + 1, ty), c = S(tx + 1, ty + 1), d = S(tx, ty + 1);
+    path.moveTo(a[0], a[1]); path.lineTo(b[0], b[1]); path.lineTo(c[0], c[1]); path.lineTo(d[0], d[1]); path.closePath(); };
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++){
+    if (!onScreen(tx, ty)) continue;
+    const i = ix(tx, ty), t = tile[i];
+    const col = groundColor(t === T.WALL || t === T.DOOR || t === T.WIN ? T.FLOOR : t, tx, ty);
+    let pth = batches.get(col); if (!pth){ pth = new Path2D(); batches.set(col, pth); }
+    addD(pth, tx, ty);
+    if (!G.vis[i]) addD(explored[i] ? dk1 : dk2, tx, ty);
+  }
+  for (const [col, pth] of batches){ ctx.fillStyle = col; ctx.fill(pth); }
+  ctx.fillStyle = "rgba(8,10,16,.5)"; ctx.fill(dk1);
+  ctx.fillStyle = "rgba(8,10,16,.72)"; ctx.fill(dk2);
+  // road paint
+  ctx.strokeStyle = "rgba(214,180,70,.55)"; ctx.lineWidth = 2 * zoom;
+  for (const r of [7, 35, 63, 91]){
+    if (r >= y0 && r <= y1){ const a = S(x0, r + .5), b = S(x1, r + .5); ctx.setLineDash([10 * zoom, 12 * zoom]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+    if (r >= x0 && r <= x1){ const a = S(r + .5, y0), b = S(r + .5, y1); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  }
+  ctx.setLineDash([]);
+  // blood
+  for (const b of G.blood){
+    if (b.x < x0 || b.x > x1 + 1 || b.y < y0 || b.y > y1 + 1) continue;
+    const [sx, sy] = S(b.x, b.y);
+    ctx.fillStyle = "rgba(100,12,8,.6)"; ctx.beginPath(); ctx.ellipse(sx, sy, b.r * zoom, b.r * .5 * zoom, b.a, 0, 7); ctx.fill();
+  }
+  // floor items
+  for (const [i, list] of floorItems){
+    if (!list.length) continue;
+    const tx = i % W, ty = (i / W) | 0; if (!G.vis[i]) continue;
+    box(tx, ty, .36, 0, 5, "#c9b98e");
+  }
+  // corpses
+  for (const c of G.corpses){
+    if (!G.vis[ix(c.x | 0, c.y | 0)]) continue;
+    drawLying(c.x, c.y, { face: c.face, shirt: shade(c.col, .6), pants: c.pants, skin: "#5e6a52", pool: true });
+  }
+
+  // pass 2: depth sorted
+  const list = [];
+  const night = isNight();
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++){
+    const i = ix(tx, ty), t = tile[i];
+    if (t === T.GRASS || t === T.ROAD || t === T.WALK || t === T.LOT || t === T.DIRT){ if (!objs.has(i)) continue; }
+    if (!onScreen(tx, ty)) continue;
+    list.push({ d: tx + ty + 1, tx, ty, kind: "tile" });
+  }
+  for (const z of Z){
+    if (!z.alive || z.x < x0 || z.x > x1 + 1 || z.y < y0 || z.y > y1 + 1) continue;
+    if (!G.vis[ix(z.x | 0, z.y | 0)]) continue;
+    list.push({ d: z.x + z.y, kind: "z", z });
+  }
+  if (P.alive) list.push({ d: P.x + P.y, kind: "p" });
+  list.sort((a, b) => a.d - b.d);
+
+  for (const e of list){
+    if (e.kind === "z") drawZombie(e.z);
+    else if (e.kind === "p") drawPlayer();
+    else drawTile(e.tx, e.ty, myB, pdepth);
+  }
+
+  // swing arc
+  if (P.swing && P.swing.kind === "swing" && P.weapon){
+    const w = ITEMS[P.weapon.id], p = P.swing.t / P.swing.dur;
+    if (p > .3 && p < .7){
+      ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let k = -6; k <= 6; k++){ const a = P.face + k * 0.13, [sx, sy] = S(P.x + Math.cos(a) * w.range, P.y + Math.sin(a) * w.range, 16); k === -6 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy); }
+      ctx.stroke();
+    }
+  }
+
+  // rain
+  if (G.rain){
+    ctx.strokeStyle = "rgba(170,190,220,.35)"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let k = 0; k < 220; k++){ const x = (k * 97 + G.simT * 340 * (1 + k % 3)) % CW, y = (k * 57 + G.simT * 900) % CH; ctx.moveTo(x, y); ctx.lineTo(x - 4, y + 14); }
+    ctx.stroke();
+  }
+
+  // darkness + flashlight
+  const dk = darkness() + (G.rain ? 0.12 : 0);
+  if (dk > 0.02 || P.sleeping){
+    lctx.globalCompositeOperation = "source-over";
+    lctx.clearRect(0, 0, CW, CH);
+    lctx.fillStyle = `rgba(4,6,14,${P.sleeping ? 0.9 : Math.min(0.92, dk)})`; lctx.fillRect(0, 0, CW, CH);
+    lctx.globalCompositeOperation = "destination-out";
+    const [psx, psy] = S(P.x, P.y, 14);
+    let g = lctx.createRadialGradient(psx, psy, 0, psx, psy, 2.2 * hw);
+    g.addColorStop(0, "rgba(0,0,0,.75)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    lctx.fillStyle = g; lctx.beginPath(); lctx.ellipse(psx, psy, 2.2 * hw, 2.2 * hh, 0, 0, 7); lctx.fill();
+    if (P.flash && !P.sleeping){
+      const L = CFG.flashRange, [ex, ey] = S(P.x + Math.cos(P.face) * L * .6, P.y + Math.sin(P.face) * L * .6, 0);
+      g = lctx.createLinearGradient(psx, psy, ex, ey);
+      g.addColorStop(0, "rgba(0,0,0,.95)"); g.addColorStop(1, "rgba(0,0,0,0)");
+      lctx.fillStyle = g; lctx.beginPath(); lctx.moveTo(psx, psy);
+      for (let k = -10; k <= 10; k++){ const a = P.face + k * 0.045, [sx, sy] = S(P.x + Math.cos(a) * L, P.y + Math.sin(a) * L, 0); lctx.lineTo(sx, sy); }
+      lctx.closePath(); lctx.fill();
+    }
+    // powered windows glow a little at night
+    ctx.drawImage(lightCv, 0, 0, CW, CH);
+  }
+
+  // progress bar + speech
+  const [hx, hy] = S(P.x, P.y, 52);
+  if (P.action){
+    const p = Math.min(1, P.action.t / P.action.dur);
+    ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(hx - 40, hy - 10, 80, 9);
+    ctx.fillStyle = "#d6f2c4"; ctx.fillRect(hx - 39, hy - 9, 78 * p, 7);
+    ctx.font = "18px VT323, monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#d6f2c4"; ctx.fillText(P.action.name, hx, hy - 14);
+  }
+  if (P.speech){
+    ctx.font = "20px VT323, monospace"; ctx.textAlign = "center";
+    ctx.fillStyle = "#000"; ctx.fillText(P.speech.msg, hx + 2, hy - (P.action ? 34 : 12) + 2);
+    ctx.fillStyle = "#fff"; ctx.fillText(P.speech.msg, hx, hy - (P.action ? 34 : 12));
+  }
+  if (P.sleeping){
+    ctx.font = "34px VT323, monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#d6f2c4";
+    ctx.fillText("Sleeping... (move to wake up)", CW / 2, CH / 2 - 120);
+  }
+}
+
+function tileAlpha(tx, ty, myB, pdepth, tall){
+  // fade anything tall that stands between the camera and the player
+  const d = tx + ty + 1 - pdepth;
+  if (d <= 0.3) return 1;
+  const across = Math.abs((tx + .5 - ty - .5) - (P.x - P.y));
+  if (d < 7 && across < 3.2 && tall) return 0.28;
+  return 1;
+}
+
+function drawTile(tx, ty, myB, pdepth){
+  const i = ix(tx, ty), t = tile[i], b = bldId[i];
+  const seen = G.vis[i] || explored[i];
+  const dim = G.vis[i] ? 1 : explored[i] ? 0.55 : 0.4;
+  const siding = b >= 0 ? SIDING[b % SIDING.length] : "#888";
+  const inMine = b >= 0 && b === myB;
+  const front = tx + ty + 1 > pdepth + 0.3;
+  const roofCol = b >= 0 ? shade(buildings[b].kind === "house" ? ["#6b5650", "#5a6270", "#66604c", "#4c5a52"][b % 4] : "#8a8c88", Math.max(dim, 0.62)) : null;
+  if ((t === T.WALL || t === T.DOOR || t === T.WIN) && b >= 0 && !inMine && !perim[i]){
+    ctx.globalAlpha = tileAlpha(tx, ty, myB, pdepth, true); diamond(tx, ty, CFG.WALLH, roofCol); ctx.globalAlpha = 1; return;
+  }
+  if (t === T.WALL || t === T.DOOR || t === T.WIN){
+    const cut = inMine && front;
+    const roofTop = b >= 0 && !inMine ? roofCol : undefined;
+    const top = cut ? 7 : CFG.WALLH;
+    const a = cut ? 1 : tileAlpha(tx, ty, myB, pdepth, true);
+    const col = shade(inMine ? "#d8d2c2" : siding, dim);
+    const c2 = col.startsWith("rgb") ? rgbToHex(col) : col;
+    if (t === T.WALL){
+      const hid = (nx, ny) => inb(nx, ny) && tile[ix(nx, ny)] === T.WALL && a === 1 && !(bldId[ix(nx, ny)] === myB && myB >= 0 && nx + ny + 1 > pdepth + 0.3);
+      box(tx, ty, 0, 0, top, c2, a, 1, 1, roofTop, !cut && hid(tx, ty + 1), !cut && hid(tx + 1, ty)); return; }
+    const f = feats.get(i);
+    if (t === T.DOOR){ drawDoor(tx, ty, f, c2, a, cut, dim, roofTop); return; }
+    // window
+    const sill = 14, head = 34;
+    box(tx, ty, 0, 0, cut ? top : sill, c2, a);
+    if (!cut){
+      const glass = f.broken ? null : f.curtain ? "#8a5a5a" : "#7fa5b8";
+      if (glass){
+        const lit = f.curtain ? glass : isNight() && powerOn() && b >= 0 && buildings[b].kind === "house" && hash(b, 3) < 0.35 ? "#e8d48a" : glass;
+        box(tx, ty, 0.42, sill, head, rgbToHex(shade(lit, dim)), a * 0.85, f.horiz ? 0 : 1, f.horiz ? 1 : 0);
+      } else if (f.glass){ box(tx, ty, 0.46, sill, sill + 5, "#a9c6d2", a * 0.7, f.horiz ? 0 : 1, f.horiz ? 1 : 0); }
+      box(tx, ty, 0, head, CFG.WALLH, c2, a, 1, 1, roofTop);
+      if (f.bar) planks(tx, ty, f.bar, a);
+    }
+    return;
+  }
+  // roof over unseen interiors of other buildings
+  if ((t === T.FLOOR) && b >= 0 && !inMine && !G.vis[i]){
+    const a = tileAlpha(tx, ty, myB, pdepth, true);
+    ctx.globalAlpha = a; diamond(tx, ty, CFG.WALLH, roofCol); ctx.globalAlpha = 1;
+    return;
+  }
+  if (t === T.TREE){
+    const [sx, sy] = S(tx + .5, ty + .5);
+    const a = tileAlpha(tx, ty, myB, pdepth, true);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = shade("#4a3626", dim); ctx.fillRect(sx - 3 * zoom, sy - 26 * zoom, 6 * zoom, 26 * zoom);
+    const g = hash(tx, ty), base = g < .5 ? "#2f4a2a" : "#36522c";
+    for (let k = 0; k < 4; k++){
+      ctx.fillStyle = shade(base, dim * (0.85 + k * 0.08));
+      ctx.beginPath(); ctx.arc(sx + Math.cos(k * 1.7 + g * 6) * 8 * zoom, sy - (40 + k * 5) * zoom + Math.sin(k * 2.3) * 4 * zoom, (15 - k * 2) * zoom, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    return;
+  }
+  const o = objs.get(i);
+  if (o && seen) drawObj(o, dim, tileAlpha(tx, ty, myB, pdepth, OBJ[o.type].h > 24));
+}
+function rgbToHex(s){
+  if (s[0] === "#") return s;
+  const m = s.match(/\d+/g); return "#" + m.slice(0, 3).map(v => (+v).toString(16).padStart(2, "0")).join("");
+}
+// ============================================================
+// Part 7: art. Furniture models, doors, jointed character rig.
+// ============================================================
+
+// ---------- low level iso drawing helpers ----------
+function poly(pts, col, a = 1){
+  ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+}
+function boxW(x0, y0, x1, y1, z0, z1, col, a = 1, topCol){
+  const pL0 = S(x0, y1, z0), pB0 = S(x1, y1, z0), pR0 = S(x1, y0, z0);
+  const pL1 = S(x0, y1, z1), pB1 = S(x1, y1, z1), pR1 = S(x1, y0, z1), pT1 = S(x0, y0, z1);
+  poly([pL0, pB0, pB1, pL1], shade(col, 0.72), a);
+  poly([pB0, pR0, pR1, pB1], shade(col, 0.88), a);
+  poly([pT1, pR1, pB1, pL1], topCol || col, a);
+}
+const faceS = (x0, x1, y, z0, z1, col, a = 1) => poly([S(x0, y, z0), S(x1, y, z0), S(x1, y, z1), S(x0, y, z1)], col, a);
+const faceE = (x, y0, y1, z0, z1, col, a = 1) => poly([S(x, y0, z0), S(x, y1, z0), S(x, y1, z1), S(x, y0, z1)], col, a);
+const topR = (x0, y0, x1, y1, z, col, a = 1) => poly([S(x0, y0, z), S(x1, y0, z), S(x1, y1, z), S(x0, y1, z)], col, a);
+function topEl(cx, cy, r, z, col, a = 1, ry){
+  const [sx, sy] = S(cx, cy, z); ctx.globalAlpha = a; ctx.fillStyle = col;
+  ctx.beginPath(); ctx.ellipse(sx, sy, r * hw * 1.414, (ry ?? r) * hh * 1.414, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+}
+function line3(p, q, col, w, a = 1){
+  const A = S(p[0], p[1], p[2]), B = S(q[0], q[1], q[2]);
+  ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = Math.max(0.8, w * zoom); ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.globalAlpha = 1;
+}
+
+// ---------- oriented furniture ----------
+// local coords: u runs along the wall, v runs from the wall (0) into the room (1)
+function frameOf(o){
+  const [dx, dy] = o.dir || [0, 1], x = o.x, y = o.y;
+  if (dy === 1) return { m: (u, v) => [x + u, y + v], vis: "S" };
+  if (dy === -1) return { m: (u, v) => [x + 1 - u, y + 1 - v], vis: null };
+  if (dx === 1) return { m: (u, v) => [x + v, y + 1 - u], vis: "E" };
+  return { m: (u, v) => [x + 1 - v, y + u], vis: null };
+}
+// a model is built from parts, then drawn back to front
+function Model(o, dim, a){
+  const F = frameOf(o), parts = [];
+  const api = {
+    F, dim, a,
+    part(u0, v0, u1, v1, z0, z1, col, deco, topCol){
+      const p = F.m(u0, v0), q = F.m(u1, v1);
+      parts.push({ x0: Math.min(p[0], q[0]), y0: Math.min(p[1], q[1]), x1: Math.max(p[0], q[0]), y1: Math.max(p[1], q[1]), z0, z1, col, deco, topCol });
+    },
+    // rectangle painted on the front face (only when the front faces the camera)
+    front(u0, u1, v, z0, z1, col, alpha = 1){
+      if (!F.vis) return;
+      const p = F.m(u0, v), q = F.m(u1, v);
+      if (F.vis === "S") faceS(p[0], q[0], p[1], z0, z1, shade(col, dim), a * alpha);
+      else faceE(p[0], p[1], q[1], z0, z1, shade(col, dim), a * alpha);
+    },
+    frontLine(u0, z0, u1, z1, v, col, w){
+      if (!F.vis) return;
+      const p = F.m(u0, v), q = F.m(u1, v);
+      line3([p[0], p[1], z0], [q[0], q[1], z1], shade(col, dim), w, a);
+    },
+    top(u0, v0, u1, v1, z, col){
+      const p = F.m(u0, v0), q = F.m(u1, v0), r = F.m(u1, v1), s = F.m(u0, v1);
+      poly([S(p[0], p[1], z), S(q[0], q[1], z), S(r[0], r[1], z), S(s[0], s[1], z)], shade(col, dim), a);
+    },
+    ell(u, v, r, z, col, ry){ const p = F.m(u, v); topEl(p[0], p[1], r, z, shade(col, dim), a, ry); },
+    line(u0, v0, z0, u1, v1, z1, col, w){ const p = F.m(u0, v0), q = F.m(u1, v1); line3([p[0], p[1], z0], [q[0], q[1], z1], shade(col, dim), w, a); },
+    draw(){
+      parts.sort((A, B) => {
+        if (A.z0 >= B.z1 - 0.01) return 1;
+        if (B.z0 >= A.z1 - 0.01) return -1;
+        return (A.x0 + A.x1 + A.y0 + A.y1) - (B.x0 + B.x1 + B.y0 + B.y1);
+      });
+      for (const p of parts){
+        boxW(p.x0, p.y0, p.x1, p.y1, p.z0, p.z1, shade(p.col, dim), a, p.topCol ? shade(p.topCol, dim) : undefined);
+        if (p.deco) p.deco();
+      }
+    },
+  };
+  return api;
+}
+
+const BOOKC = ["#8a2f2a", "#2f4f7a", "#c9a446", "#3f6a3f", "#d9d2c0", "#5a3a6a", "#b5652e", "#1f2a33"];
+const PRODUCT = {
+  grocery: ["#d24a32", "#e8c23a", "#3a7ac8", "#f0f0e8", "#5aa04a", "#c8681e", "#8a3a8a"],
+  pharmacy: ["#f2f2ee", "#4a8ac8", "#e04848", "#7ac8b8", "#f0f0f0"],
+  hardware: ["#e88a1e", "#7a8088", "#3a3a3e", "#c8b048", "#a83a2a"],
+};
+
+function drawObj(o, dim, a){
+  const M = Model(o, dim, a), h = hash(o.x * 7 + 3, o.y * 11 + 5);
+  const WOOD = "#7b5638", WOOD_D = "#5a3d27", WHITE = "#e2e3df", STEEL = "#8d969c";
+  switch (o.type){
+    case "fridge": {
+      M.part(.1, .06, .9, .78, 0, 40, WHITE, () => {
+        M.frontLine(.1, 27, .9, 27, .78, "#9aa0a0", 1.2);
+        M.front(.74, .8, .78, 29, 37, "#7a8084");
+        M.front(.74, .8, .78, 9, 24, "#7a8084");
+        M.front(.1, .9, .78, 0, 2.5, "#55595a");
+      });
+      break;
+    }
+    case "oven": {
+      M.part(.06, .02, .94, .16, 18, 26, "#cfd0cb", () => { for (const u of [.25, .42, .58, .75]) M.ell(u, .17, .03, 22, "#3a3a3a"); });
+      M.part(.06, .06, .94, .9, 0, 18, WHITE, () => {
+        for (const [u, v] of [[.3, .35], [.7, .35], [.3, .68], [.7, .68]]){ M.ell(u, v, .12, 18.05, "#3a3b3d"); M.ell(u, v, .07, 18.1, "#222"); }
+        M.front(.22, .78, .9, 3, 12, "#1e1f22");
+        M.front(.28, .72, .9, 5, 10, "#3c3226", 0.8);
+        M.frontLine(.2, 14.5, .8, 14.5, .9, "#7a7a7a", 1.4);
+      });
+      break;
+    }
+    case "counter": case "ksink": {
+      M.part(0, .04, 1, .84, 0, 16, WOOD, () => {
+        M.front(.06, .47, .84, 2, 14, WOOD_D, 0.55);
+        M.front(.53, .94, .84, 2, 14, WOOD_D, 0.55);
+        M.front(.4, .44, .84, 9, 11, "#c8c0a8"); M.front(.56, .6, .84, 9, 11, "#c8c0a8");
+      });
+      M.part(0, .01, 1, .92, 16, 18, "#cdc5b0", () => {
+        if (o.type === "ksink"){
+          M.top(.18, .22, .82, .74, 18.05, "#9aa3a8"); M.top(.24, .28, .76, .68, 18.1, "#5e676c");
+          M.line(.5, .12, 18, .5, .12, 25, STEEL, 1.6); M.line(.5, .12, 25, .5, .32, 24, STEEL, 1.6);
+        } else if (h < .5){
+          M.part(.15, .2, .35, .4, 18, 23, h < .25 ? "#b84a3a" : "#e8e2d0");
+        }
+      });
+      break;
+    }
+    case "bsink": {
+      M.part(.42, .25, .58, .45, 0, 13, WHITE);
+      M.part(.15, .05, .85, .7, 13, 17, WHITE, () => {
+        M.ell(.5, .4, .22, 17.05, "#b9c2c4", .16); M.ell(.5, .42, .15, 17.1, "#8a969a", .1);
+        M.line(.5, .1, 17, .5, .1, 22, STEEL, 1.5); M.line(.5, .1, 22, .5, .24, 21, STEEL, 1.5);
+      });
+      break;
+    }
+    case "toilet": {
+      M.part(.25, .02, .75, .26, 0, 20, WHITE, null, "#d0d2ce");
+      M.part(.32, .26, .68, .78, 0, 9, WHITE, () => {
+        M.ell(.5, .52, .2, 9.05, "#f2f2ee", .24); M.ell(.5, .53, .13, 9.1, "#8fb3c2", .16);
+      });
+      break;
+    }
+    case "bed": {
+      const blanket = ["#7a3a3a", "#3a5a7a", "#5a6a3a", "#7a6a4a", "#5a4a6a"][(h * 5) | 0];
+      M.part(.02, 0, .98, .1, 0, 17, WOOD_D);
+      M.part(.04, .06, .96, 1, 0, 6, WOOD);
+      M.part(.06, .08, .94, .99, 6, 10, "#e6e1d6");
+      M.part(.14, .12, .86, .33, 10, 12.5, "#f5f3ee");
+      M.part(.06, .4, .94, .99, 10, 11.2, blanket, () => { M.top(.06, .4, .94, .5, 11.25, shade(blanket, 1.25)); });
+      break;
+    }
+    case "wardrobe": {
+      M.part(.05, .04, .95, .62, 0, 43, WOOD, () => {
+        M.front(.1, .48, .62, 4, 39, WOOD_D, 0.5); M.front(.52, .9, .62, 4, 39, WOOD_D, 0.5);
+        M.front(.43, .46, .62, 20, 24, "#d4b46a"); M.front(.54, .57, .62, 20, 24, "#d4b46a");
+      });
+      M.part(.02, .02, .98, .66, 43, 46, WOOD_D);
+      break;
+    }
+    case "dresser": {
+      M.part(.06, .06, .94, .6, 0, 20, WOOD, () => {
+        for (const [z0, z1] of [[2, 7], [8, 13], [14, 19]]){
+          M.front(.1, .9, .6, z0, z1, WOOD_D, 0.45);
+          M.front(.28, .34, .6, (z0 + z1) / 2 - .6, (z0 + z1) / 2 + .6, "#d4b46a"); M.front(.66, .72, .6, (z0 + z1) / 2 - .6, (z0 + z1) / 2 + .6, "#d4b46a");
+        }
+      });
+      // lamp on top
+      M.part(.66, .18, .82, .34, 20, 21.5, "#3a3a3a");
+      M.part(.6, .12, .88, .4, 26, 31, "#e9dcae", () => { M.line(.74, .26, 21.5, .74, .26, 26, "#3a3a3a", 1); });
+      break;
+    }
+    case "sofa": {
+      const c = ["#7a3f3a", "#4a5a3a", "#5a4a3a", "#3a4a5a", "#6a5a4a"][(h * 5) | 0];
+      M.part(.02, .02, .98, .34, 0, 18, shade(c, .85));
+      M.part(.02, .2, .98, .95, 0, 8, c, () => { M.top(.49, .34, .51, .95, 8.05, shade(c, .7)); });
+      M.part(0, .15, .14, .95, 0, 13, shade(c, .9));
+      M.part(.86, .15, 1, .95, 0, 13, shade(c, .9));
+      break;
+    }
+    case "bookcase": {
+      M.part(.04, .04, .96, .44, 0, 42, WOOD, () => {
+        M.front(.09, .91, .44, 2, 40, "#2a1e14");
+        for (let s = 0; s < 4; s++){
+          const z = 2 + s * 9.6;
+          M.front(.09, .91, .44, z, z + 1.2, WOOD);
+          let u = .1, k = s * 13 + ((h * 97) | 0);
+          while (u < .86){
+            const w = .045 + hash(k, 3) * .05, ht = 5.5 + hash(k, 7) * 2.5;
+            if (hash(k, 9) > .12) M.front(u, Math.min(u + w, .9), .44, z + 1.2, z + 1.2 + ht, BOOKC[(hash(k, 1) * BOOKC.length) | 0]);
+            u += w + .008; k++;
+          }
+        }
+      });
+      break;
+    }
+    case "tv": {
+      M.part(.1, .12, .9, .78, 0, 9, "#4a3a2c", () => { M.front(.16, .84, .78, 1.5, 7.5, "#33271d"); });
+      M.part(.32, .1, .68, .26, 10, 20, "#2a2b2e");
+      M.part(.2, .24, .8, .72, 9, 23, "#35363a", () => {
+        const on = powerOn() && G.vis[ix(o.x, o.y)];
+        M.front(.25, .75, .72, 11, 21, on ? (Math.random() < .5 ? "#7d9ec8" : "#8fb0d8") : "#1e2a2e");
+        M.front(.66, .72, .72, 9.6, 10.6, "#c8c8c8");
+        M.line(.5, .48, 23, .3, .55, 33, "#9a9a9a", 1); M.line(.5, .48, 23, .72, .42, 32, "#9a9a9a", 1);
+      });
+      break;
+    }
+    case "medcab": {
+      M.part(.18, 0, .82, .22, 17, 33, "#e8e8e2", () => {
+        M.front(.2, .8, .22, 18, 32, "#b8c8cc", 0.8);
+        M.front(.45, .55, .22, 21, 29, "#c83a32"); M.front(.37, .63, .22, 24, 26, "#c83a32");
+      });
+      break;
+    }
+    case "crate": {
+      const x0 = o.x + .1, y0 = o.y + .1, x1 = o.x + .9, y1 = o.y + .9, c = shade("#9b7b4c", dim);
+      boxW(x0, y0, x1, y1, 0, 15, c, a);
+      for (const z of [5, 10]){ line3([x0, y1, z], [x1, y1, z], shade("#6a5030", dim), 1, a); line3([x1, y1, z], [x1, y0, z], shade("#6a5030", dim), 1, a); }
+      line3([x0, y1, 0], [x1, y1, 15], shade("#6a5030", dim), 1.3, a); line3([x1, y1, 0], [x1, y0, 15], shade("#6a5030", dim), 1.3, a);
+      for (const t of [.35, .65]) line3([x0 + (x1 - x0) * t, y0, 15], [x0 + (x1 - x0) * t, y1, 15], shade("#6a5030", dim), .8, a);
+      break;
+    }
+    case "shelf": {
+      const pal = PRODUCT[o.store] || PRODUCT.grocery;
+      const stock = o.items ? Math.min(1, o.items.length / 3) : 1;
+      const x0 = o.x + .08, y0 = o.y + .12, x1 = o.x + .92, y1 = o.y + .88, M2 = "#9aa0a4";
+      for (const [px, py] of [[x0, y0], [x0, y1], [x1, y0]]) line3([px, py, 0], [px, py, 34], shade("#5a6066", dim), 1.6, a);
+      for (let s = 0; s < 4; s++){
+        const z = 1 + s * 9;
+        boxW(x0, y0, x1, y1, z, z + 1.2, shade(M2, dim), a);
+        let k = s * 5 + ((h * 31) | 0);
+        for (let i = 0; i < 4; i++, k++){
+          if (hash(k, o.x) > stock * 0.95) continue;
+          const bx = x0 + .03 + i * .2, by = y0 + .08 + hash(k, 2) * .3;
+          const ht = 3.5 + hash(k, 4) * 3.5;
+          boxW(bx, by, bx + .15, by + .28, z + 1.2, z + 1.2 + ht, shade(pal[(hash(k, 6) * pal.length) | 0], dim), a);
+        }
+      }
+      line3([x1, y1, 0], [x1, y1, 34], shade("#5a6066", dim), 1.6, a);
+      break;
+    }
+    case "checkout": {
+      M.part(0, .1, 1, .9, 0, 15, "#4a5560", () => {
+        M.top(.05, .25, .55, .75, 15.05, "#1e2226");
+        M.front(.05, .95, .9, 2, 13, "#5a6670", 0.6);
+      });
+      M.part(.62, .2, .92, .55, 15, 21, "#2e2e30", () => { M.top(.66, .24, .88, .4, 21.05, "#5a7a5a"); });
+      break;
+    }
+    case "car": drawCar(o, dim, a); return;
+    default: { const d = OBJ[o.type]; boxW(o.x + .08, o.y + .08, o.x + .92, o.y + .92, 0, d.h, shade(d.col, dim), a); }
+  }
+  M.draw();
+}
+
+function drawCar(o, dim, a){
+  const along = o.dir && o.dir[0] !== 0 ? "x" : "y";
+  const c = shade(o.col || "#5a6470", dim), glass = shade("#3a4a5a", dim), tyre = "#141414";
+  const L = (p, q, r, s) => along === "x" ? [o.x + p, o.y + q, o.x + r, o.y + s] : [o.x + q, o.y + p, o.x + s, o.y + r];
+  // wheels
+  for (const p of [-.15, .95]) for (const q of [.18, .82]){
+    const [x0, y0] = L(p, q, 0, 0); const w = along === "x" ? [x0 + .3, y0] : [x0, y0 + .3];
+    topEl((x0 + w[0]) / 2 + (along === "x" ? 0 : 0), (y0 + w[1]) / 2, .14, 3, tyre, a);
+  }
+  const b = L(-.4, .2, 1.4, .8);
+  boxW(b[0], b[1], b[2], b[3], 2.5, 10, c, a);
+  const cab = L(.05, .24, .95, .76);
+  boxW(cab[0], cab[1], cab[2], cab[3], 10, 17, glass, a, c);
+  // headlights / tail lights on visible ends
+  const lights = (along === "x") ? () => { faceE(b[2], b[1] + .05, b[1] + .15, 6, 8.5, "#e8dca0", a); faceE(b[2], b[3] - .15, b[3] - .05, 6, 8.5, "#e8dca0", a); }
+                                  : () => { faceS(b[0] + .05, b[0] + .15, b[3], 6, 8.5, "#e8dca0", a); faceS(b[2] - .15, b[2] - .05, b[3], 6, 8.5, "#e8dca0", a); };
+  lights();
+  if (along === "x") faceS(b[0] + .05, b[2] - .05, b[3], 9.5, 10.2, shade(c, .7), a); else faceE(b[2], b[1] + .05, b[3] - .05, 9.5, 10.2, shade(c, .7), a);
+}
+
+// ---------- doors ----------
+function drawDoor(tx, ty, f, c2, a, cut, dim, roofTop){
+  const H = cut ? 7 : 36, wood = shade(f.bar ? "#5a4630" : "#7a5434", dim);
+  if (!cut) box(tx, ty, 0, 36, CFG.WALLH, c2, a, 1, 1, roofTop);
+  if (f.open){
+    // the door leaf swings against the frame
+    const leaf = shade(f.broken ? "#4a3a2a" : "#7a5434", dim);
+    if (f.horiz) boxW(tx + .02, ty + .12, tx + .12, ty + .95, 0, f.broken ? 6 : H, leaf, a);
+    else boxW(tx + .12, ty + .02, tx + .95, ty + .12, 0, f.broken ? 6 : H, leaf, a);
+    return;
+  }
+  if (f.horiz){ boxW(tx, ty + .38, tx + 1, ty + .62, 0, H, wood, a);
+    if (!cut){ faceS(tx + .12, tx + .88, ty + .62, 3, 17, shade("#5e4026", dim), a * .6); faceS(tx + .12, tx + .88, ty + .62, 20, 33, shade("#5e4026", dim), a * .6); topEl(tx + .82, ty + .66, .035, 18, "#d4b46a", a); } }
+  else { boxW(tx + .38, ty, tx + .62, ty + 1, 0, H, wood, a);
+    if (!cut){ faceE(tx + .62, ty + .12, ty + .88, 3, 17, shade("#5e4026", dim), a * .6); faceE(tx + .62, ty + .12, ty + .88, 20, 33, shade("#5e4026", dim), a * .6); topEl(tx + .66, ty + .18, .035, 18, "#d4b46a", a); } }
+  if (f.bar) planks(tx, ty, f.bar, a);
+}
+
+// ============================================================
+// Character rig: jointed skeleton projected into the iso view
+// ============================================================
+const RIG = { U: 1 / 34, thigh: 8.2, shin: 8, upper: 6.6, fore: 6.2, sh: 4.3, hip: 2.3 };
+function hull(pts){
+  pts = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const p of pts){ while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = pts.length - 1; i >= 0; i--){ const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+const GAIT = {
+  walk:  { A: .38, K: .68, arm: .42, elb: .35, lean: .04, th0: 0, kn0: .08, bounce: 0 },
+  run:   { A: .72, K: 1.7, arm: .85, elb: 1.45, lean: .26, th0: .05, kn0: .2, bounce: 1.6 },
+  sneak: { A: .32, K: .6, arm: .18, elb: 1.0, lean: .38, th0: .42, kn0: 1.0, bounce: 0 },
+  zombie:{ A: .3, K: .55, arm: 0, elb: .15, lean: .17, th0: .04, kn0: .15, bounce: 0 },
+  sprint:{ A: .78, K: 1.8, arm: 0, elb: .3, lean: .32, th0: .05, kn0: .2, bounce: 1.8 },
+};
+const ease = t => t < .5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+
+function drawRig(x, y, o){
+  const z = zoom, K = 1.12, U = RIG.U * K;
+  const cf = Math.cos(o.face), sf = Math.sin(o.face), rx = -sf, ry = cf;
+  const W3 = (fa, sb, h) => [x + (cf * fa + rx * sb) * U, y + (sf * fa + ry * sb) * U, h * K];
+  const Pj = p => S(p[0], p[1], p[2]);
+  const g = GAIT[o.mode] || GAIT.walk, m = o.move ?? 0, ph = o.phase || 0;
+  const L1 = RIG.thigh, L2 = RIG.shin;
+  // legs
+  const legs = [];
+  let hipH = 0;
+  for (let i = 0; i < 2; i++){
+    const phi = ph + i * Math.PI;
+    const asym = o.mode === "zombie" && i === 1 ? .55 : 1;
+    let th = g.th0 + g.A * m * asym * Math.sin(phi);
+    let kn = g.kn0 + g.K * m * Math.max(0, Math.cos(phi)) * asym;
+    if (o.stomp && i === 1){ const p = o.stomp; th = p < .5 ? 1.0 * (p / .5) : 1.0 * (1 - (p - .5) / .5) * .4; kn = p < .5 ? 1.6 * (p / .5) : .2; }
+    legs.push({ th, kn, reach: L1 * Math.cos(th) + L2 * Math.cos(th - kn) });
+    hipH = Math.max(hipH, legs[i].reach);
+  }
+  if (o.stomp) hipH = legs[0].reach;
+  hipH += g.bounce * m * Math.abs(Math.sin(ph));
+  if (o.idle) hipH += Math.sin(o.idle) * .25;
+  const lean = (o.lean ?? g.lean) * (o.mode === "sneak" ? 1 : (0.3 + 0.7 * m));
+  const tilt = (fa, h) => [fa + (h - hipH) * Math.sin(lean), hipH + (h - hipH) * Math.cos(lean)];
+
+  const parts = [];
+  const depth = p => p[0] + p[1];
+  const skin = o.skin, dk = (c, f) => shade(c, f);
+
+  for (let i = 0; i < 2; i++){
+    const s = i ? 1 : -1, { th, kn } = legs[i];
+    const hip = W3(0, s * RIG.hip, hipH);
+    const knA = L1 * Math.sin(th), knH = hipH - L1 * Math.cos(th);
+    const anA = knA + L2 * Math.sin(th - kn), anH = Math.max(0.4, knH - L2 * Math.cos(th - kn));
+    const knee = W3(knA, s * RIG.hip * 1.05, knH), ank = W3(anA, s * RIG.hip * 1.1, anH);
+    const toe = W3(anA + 2.6, s * RIG.hip * 1.1, Math.max(0.3, anH - .4 + (anH > 1.5 ? -.6 : 0)));
+    parts.push({ d: depth(knee), fn: (far) => {
+      const pc = dk(o.pants, far ? .78 : 1);
+      seg(hip, knee, pc, 3.3); seg(knee, ank, pc, 2.8); seg(ank, toe, dk(o.shoes, far ? .7 : 1), 2.4);
+    } });
+  }
+  // pelvis + torso as volumes
+  const sh = tilt(0, hipH + 12.5);
+  const box8 = (fa0, fa1, sb, h0, h1, lean_) => {
+    const pts = [];
+    for (const fa of [fa0, fa1]) for (const sbb of [-sb, sb]) for (const h of [h0, h1]){
+      const t = lean_ ? tilt(fa, h) : [fa, h];
+      pts.push(Pj(W3(t[0], sbb, t[1])));
+    }
+    return hull(pts);
+  };
+  const center = W3(0, 0, hipH);
+  parts.push({ d: depth(center) - 0.0005, fn: () => { poly(box8(-1.5, 1.7, 3.3, hipH - 2.6, hipH + 1.6, false), o.pants); } });
+  parts.push({ d: depth(center), fn: () => {
+    const hl = box8(-1.6, 2.0, RIG.sh - .3, hipH + 1, hipH + 12.6, true);
+    poly(hl, o.shirt);
+    // shading on the side away from the light
+    ctx.save(); ctx.beginPath(); hl.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.clip();
+    const sideP = Pj(W3(tilt(0, hipH + 7)[0], -RIG.sh * 1.6, tilt(0, hipH + 7)[1]));
+    ctx.fillStyle = "rgba(0,0,0,.16)"; ctx.beginPath(); ctx.arc(sideP[0], sideP[1], 6 * z * K, 0, 7); ctx.fill();
+    if (o.blood){ const bp = Pj(W3(tilt(1.5, hipH + 6)[0], 1, tilt(1.5, hipH + 6)[1])); ctx.fillStyle = "rgba(105,14,10,.8)"; ctx.beginPath(); ctx.ellipse(bp[0], bp[1], 3.4 * z, 4.4 * z, .5, 0, 7); ctx.fill(); }
+    if (o.ragged){ ctx.fillStyle = "rgba(0,0,0,.25)"; const rp = Pj(W3(tilt(1, hipH + 2)[0], -2, tilt(1, hipH + 2)[1])); ctx.fillRect(rp[0] - 2 * z, rp[1] - 1 * z, 3 * z, 2 * z); }
+    ctx.restore();
+  } });
+
+  // arms
+  const hands = [];
+  const arms = [];
+  for (let i = 0; i < 2; i++){
+    const s = i ? 1 : -1;
+    let al, el;
+    if (o.mode === "zombie" || o.mode === "sprint"){
+      al = (o.lunge ? 1.55 : 1.22) + .1 * Math.sin(ph * .5 + i * 1.7); el = o.lunge ? .05 : .2 + .1 * i;
+    } else {
+      al = g.arm * m * Math.sin(ph + (1 - i) * Math.PI); el = g.elb * (o.mode === "walk" ? (0.4 + 0.6 * m) : 1);
+      if (o.mode === "walk" && m < .1) { al = .05; el = .15; }
+    }
+    if (o.weapon && i === 1 && !o.swing){ al = .5; el = .7; }
+    if (o.weapon && i === 0 && o.weapon.two && !o.swing){ al = .5; el = .7; }
+    if (o.swing){
+      const p = o.swing.p;
+      if (o.swing.kind === "shove"){ al = .3 + 1.25 * Math.sin(p * Math.PI); el = .1; }
+      else if (o.swing.kind === "swing" && (i === 1 || (o.weapon && o.weapon.two))){
+        if (p < .35){ const t = ease(p / .35); al = .5 + 2.4 * t; el = .7 - .5 * t; }
+        else if (p < .55){ const t = ease((p - .35) / .2); al = 2.9 - 2.4 * t; el = .2; }
+        else { const t = (p - .55) / .45; al = .5; el = .2 + .5 * t; }
+      }
+    }
+    const sp = tilt(0, hipH + 11.5);
+    const shoulder = W3(sp[0], s * RIG.sh, sp[1]);
+    const eA = sp[0] + RIG.upper * Math.sin(al + lean * .3), eH = sp[1] - RIG.upper * Math.cos(al + lean * .3);
+    const hA = eA + RIG.fore * Math.sin(al + el + lean * .3), hH = eH - RIG.fore * Math.cos(al + el + lean * .3);
+    const inward = o.weapon && o.weapon.two && (i === 0) ? .2 : 1;
+    const elbow = W3(eA, s * RIG.sh * 1.08, eH), hand = W3(hA, s * RIG.sh * (o.mode === "zombie" ? .8 : 1.05) * inward, hH);
+    hands[i] = { hand, al: al + el + lean * .3, shoulder, elbow };
+    arms.push({ i, shoulder, elbow, hand });
+  }
+  // two handed weapons: left hand grips just below the right
+  if (o.weapon && o.weapon.two){
+    const r = hands[1];
+    const dir = [Math.sin(r.al), -Math.cos(r.al)];
+    const rh = r.hand;
+    const lh = [rh[0] - (cf * dir[0]) * U * 2, rh[1] - (sf * dir[0]) * U * 2, rh[2] - dir[1] * 2 * K];
+    arms[0].hand = lh;
+    arms[0].elbow = [(arms[0].shoulder[0] + lh[0]) / 2 + rx * U * -1.5, (arms[0].shoulder[1] + lh[1]) / 2 + ry * U * -1.5, (arms[0].shoulder[2] + lh[2]) / 2 - 2];
+  }
+  for (const A of arms){
+    parts.push({ d: depth(A.elbow) + 0.001, fn: (far) => {
+      const sc = dk(o.sleeve || o.shirt, far ? .78 : 1);
+      seg(A.shoulder, A.elbow, sc, 2.5);
+      seg(A.elbow, A.hand, dk(o.sleeve === skin ? skin : (o.bareArms ? skin : sc), far ? .8 : 1), 2.2);
+      const hp = Pj(A.hand); ctx.fillStyle = dk(skin, far ? .8 : 1); ctx.beginPath(); ctx.arc(hp[0], hp[1], 1.3 * z * K, 0, 7); ctx.fill();
+    } });
+  }
+  // weapon
+  if (o.weapon){
+    const r = hands[1], al = r.al, w = o.weapon;
+    const dirA = Math.sin(al), dirH = -Math.cos(al);
+    const len = w.len, hand = r.hand;
+    const tip = [hand[0] + cf * dirA * len * U, hand[1] + sf * dirA * len * U, hand[2] + dirH * len * K];
+    const butt = [hand[0] - cf * dirA * 1.5 * U, hand[1] - sf * dirA * 1.5 * U, hand[2] - dirH * 1.5 * K];
+    parts.push({ d: depth(tip) + 0.002, fn: () => {
+      seg(butt, tip, w.col, w.thick);
+      if (w.head){
+        const hd = [tip[0] - cf * dirA * 2.5 * U, tip[1] - sf * dirA * 2.5 * U, tip[2] - dirH * 2.5 * K];
+        const side = [rx * U * 3, ry * U * 3];
+        seg([hd[0] - side[0] * .2, hd[1] - side[1] * .2, hd[2]], [hd[0] + side[0], hd[1] + side[1], hd[2]], w.head, 3.2);
+      }
+      if (w.pan){ const tp = Pj(tip); ctx.fillStyle = "#2a2a2c"; ctx.beginPath(); ctx.ellipse(tp[0], tp[1], 4 * z, 2.6 * z, 0, 0, 7); ctx.fill(); }
+    } });
+  }
+  // head
+  const nb = tilt(.3, hipH + 12.8), hc = tilt(.6 + (o.mode === "zombie" ? 1.2 : 0), hipH + 16.8 - (o.mode === "zombie" ? .8 : 0));
+  const headW = W3(hc[0], o.headTilt || 0, hc[1]);
+  parts.push({ d: depth(center) + 0.003, fn: () => {
+    seg(W3(nb[0], 0, nb[1]), headW, skin, 2.2);
+    const hp = Pj(headW), r = 3.25 * z * K;
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(hp[0], hp[1], r, 0, 7); ctx.fill();
+    // hair sits toward the back of the head
+    const back = Pj(W3(hc[0] - 1.3, o.headTilt || 0, hc[1] + .9));
+    ctx.save(); ctx.beginPath(); ctx.arc(hp[0], hp[1], r, 0, 7); ctx.clip();
+    ctx.fillStyle = o.hair; ctx.beginPath(); ctx.arc(back[0], back[1] - r * .25, r * 1.02, 0, 7); ctx.fill();
+    // face toward camera: eyes
+    if (cf + sf > -0.2){
+      for (const s of [-1, 1]){
+        const e = Pj(W3(hc[0] + 2.6, (o.headTilt || 0) + s * 1.15, hc[1] + .1));
+        ctx.fillStyle = o.eyes || "#1a1410"; ctx.fillRect(e[0] - .55 * z, e[1] - .55 * z, 1.1 * z * K, 1.1 * z * K);
+      }
+      if (o.mode === "zombie"){ const mth = Pj(W3(hc[0] + 2.7, o.headTilt || 0, hc[1] - 1.6)); ctx.fillStyle = "#3a1210"; ctx.fillRect(mth[0] - 1 * z, mth[1] - .4 * z, 2 * z, 1.2 * z); }
+    }
+    ctx.restore();
+  } });
+
+  // shadow
+  const c0 = Pj(W3(0, 0, 0));
+  ctx.fillStyle = "rgba(0,0,0,.32)"; ctx.beginPath(); ctx.ellipse(c0[0], c0[1], 8 * z, 4 * z, 0, 0, 7); ctx.fill();
+  // far limbs darker: the side of the body further from the camera
+  const cd = depth(center);
+  parts.sort((A, B) => A.d - B.d);
+  for (const p of parts) p.fn(p.d < cd - 0.002);
+
+  function seg(a, b, col, w){
+    const A = Pj(a), B = Pj(b);
+    ctx.strokeStyle = col; ctx.lineWidth = w * z * K; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+  }
+}
+
+// weapon looks for the rig
+function weaponArt(id){
+  const w = ITEMS[id]; if (!w) return null;
+  const base = { len: 9, col: "#8a6a42", thick: 1.6, two: false };
+  switch (w.skill){
+    case "longblunt": Object.assign(base, { len: 15, thick: 2.1, two: true }); break;
+    case "axe": Object.assign(base, { len: id === "axe" ? 15 : 9, thick: 1.6, two: id === "axe", head: "#8a9096" }); break;
+    case "shortblunt": Object.assign(base, { len: 8, thick: 1.6 }); break;
+    case "blade": Object.assign(base, { len: 5.5, thick: 1.2, col: "#c8ccd0" }); break;
+  }
+  if (["crowbar", "pipe", "golf"].includes(id)) base.col = "#8a9096";
+  if (id === "crowbar") base.col = "#7a3030";
+  if (id === "hammer") base.head = "#6a6e72";
+  if (id === "shovel") { base.head = "#6a6e72"; base.col = "#7a5a3a"; }
+  if (id === "pan") { base.pan = true; base.col = "#2a2a2c"; base.len = 6; }
+  return base;
+}
+
+function drawPlayer(){
+  const sw = P.swing ? { kind: P.swing.kind, p: P.swing.t / P.swing.dur } : null;
+  const mode = P.sneaking ? "sneak" : (P.running && P.moving) ? "run" : "walk";
+  drawRig(P.x, P.y, {
+    face: P.face, phase: P.walkPhase, move: P.moveBlend || 0, mode, idle: G.simT * 2,
+    shirt: OCCS[P.occ].shirt, sleeve: OCCS[P.occ].shirt, pants: "#2e3a4a", shoes: "#2a2420", skin: "#d9ae88", hair: "#3a2a1e",
+    weapon: P.weapon ? weaponArt(P.weapon.id) : null, swing: sw && sw.kind !== "stomp" ? sw : null, stomp: sw && sw.kind === "stomp" ? sw.p : 0,
+    blood: P.wounds.some(w => w.bleed && !w.bandaged),
+  });
+}
+function drawZombie(z){
+  const skin = z.skin || (z.skin = pick(["#8a977a", "#9a9a82", "#7f8c74", "#a39a86", "#8c8070"]));
+  if (z.fake || z.down > 0 || z.type === "crawl"){
+    drawLying(z.x, z.y, { face: z.face, shirt: z.col, pants: z.pants, skin, hair: z.hair || "#2a2622", crawl: z.type === "crawl" && z.down <= 0 && !z.fake, phase: z.anim, move: Math.min(1, (z.mv || 0) / 0.2) });
+    return;
+  }
+  drawRig(z.x, z.y, {
+    face: z.face, phase: z.anim, move: Math.min(1, (z.mv || 0) / 0.35), mode: z.type === "sprint" && z.state === "chase" ? "sprint" : "zombie",
+    shirt: z.col, sleeve: z.col, pants: z.pants, shoes: "#1e1c1a", skin, hair: z.hair || (z.hair = pick(["#2a2622", "#4a3a2a", "#6a6a62", "#1a1816", "#7a5a3a"])),
+    eyes: "#e8e0c0", lunge: z.lunge > 0, blood: z.hp < z.maxhp || z.bloody, ragged: true, headTilt: z.tiltH ?? (z.tiltH = rf(-1.2, 1.2)),
+    lean: z.lunge > 0 ? .4 : undefined,
+  });
+}
+
+// bodies on the ground (corpses, downed zombies, crawlers)
+function drawLying(x, y, o){
+  const z = zoom, K = 1.12, U = RIG.U * K;
+  const cf = Math.cos(o.face), sf = Math.sin(o.face), rx = -sf, ry = cf;
+  const W3 = (fa, sb, h) => [x + (cf * fa + rx * sb) * U, y + (sf * fa + ry * sb) * U, h * K];
+  const Pj = p => S(p[0], p[1], p[2]);
+  const seg = (a, b, col, w) => { const A = Pj(a), B = Pj(b); ctx.strokeStyle = col; ctx.lineWidth = w * z * K; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); };
+  if (o.pool){ const c = Pj(W3(2, 0, 0)); ctx.fillStyle = "rgba(90,10,8,.55)"; ctx.beginPath(); ctx.ellipse(c[0], c[1], 14 * z, 7 * z, 0, 0, 7); ctx.fill(); }
+  const lift = o.crawl ? 4 : 1.6;
+  const reach = o.crawl ? Math.sin(o.phase * 1.4) * 3 * (o.move || 0.3) : 0;
+  // legs
+  for (const s of [-1, 1]){
+    seg(W3(-2, s * 2, 1.5), W3(-10, s * 2.6, 1.4), o.pants, 3.2);
+    seg(W3(-10, s * 2.6, 1.4), W3(-17, s * (3 + (o.crawl ? .8 : 0)), 1.2), o.pants, 2.8);
+    seg(W3(-17, s * 3, 1.2), W3(-18.5, s * 3, 3), "#1e1c1a", 2.2);
+  }
+  const torso = hull([W3(-3, -3.2, 1), W3(-3, 3.2, 1), W3(10, -4, lift), W3(10, 4, lift), W3(-3, -3.2, 4), W3(-3, 3.2, 4), W3(10, -4, lift + 3), W3(10, 4, lift + 3)].map(Pj));
+  poly(torso, o.shirt);
+  // arms
+  for (const s of [-1, 1]){
+    const r = o.crawl ? reach * s : 0;
+    const el = W3(o.crawl ? 14 + r : 6, s * 6.5, o.crawl ? 2 : 1.5), hd = W3(o.crawl ? 19 + r * 1.3 : 2, s * (o.crawl ? 4 : 8), 1.2);
+    seg(W3(9, s * 4, lift + 1.5), el, o.shirt, 2.5); seg(el, hd, o.skin, 2.2);
+  }
+  const hc = Pj(W3(13.5, 0, lift + 2.5));
+  ctx.fillStyle = o.skin; ctx.beginPath(); ctx.arc(hc[0], hc[1], 3.25 * z * K, 0, 7); ctx.fill();
+  ctx.fillStyle = o.hair || "#2a2622"; ctx.beginPath(); ctx.arc(hc[0], hc[1] - 1 * z, 2.9 * z * K, Math.PI, 2 * Math.PI); ctx.fill();
+}
+
+// ---------- hover labels ----------
+function hoverLabel(mx, my){
+  if (!G || !P) return null;
+  for (const lift of [0, 14, 28]){
+    const [wx, wy] = toWorld(mx, my + lift * zoom);
+    const tx = Math.floor(wx), ty = Math.floor(wy);
+    if (!inb(tx, ty)) continue;
+    const z = Z.find(z => z.alive && G.vis[ix(z.x | 0, z.y | 0)] && Math.hypot(z.x - wx, z.y - wy) < .45);
+    if (z) return z.fake ? "A body... is it moving?" : z.down > 0 ? "Zombie (knocked down)" : z.type === "crawl" ? "Crawling zombie" : "Zombie";
+    const c = G.corpses.find(c => Math.hypot(c.x - wx, c.y - wy) < .5 && explored[ix(c.x | 0, c.y | 0)]);
+    if (c && lift === 0) return "Dead body";
+    const i = ix(tx, ty);
+    if (!explored[i]) continue;
+    const o = objs.get(i);
+    if (o){
+      let s = OBJ[o.type].n;
+      if (OBJ[o.type].cont && o.items) s += o.items.length ? "" : " (empty)";
+      return s;
+    }
+    const f = feats.get(i);
+    if (f){
+      if (f.type === "door") return (f.broken ? "Broken door" : f.open ? "Open door" : f.locked ? "Door (locked)" : "Door") + (f.bar ? `, ${f.bar} plank${f.bar > 1 ? "s" : ""}` : "");
+      return (f.broken ? "Broken window" : f.open ? "Open window" : "Window") + (f.bar ? `, ${f.bar} plank${f.bar > 1 ? "s" : ""}` : "");
+    }
+    const fl = floorItems.get(i);
+    if (fl && fl.length && lift === 0) return fl.length === 1 ? ITEMS[fl[0].id].n + " (on the floor)" : `${fl.length} items on the floor`;
+    if (lift === 0 && tile[i] === T.TREE) return "Tree";
+  }
+  return null;
+}
+// ============================================================
+// Part 6: audio, UI panels, input, game flow, main loop
+// ============================================================
+const sfx = (() => {
+  let ac = null, master, nb;
+  function init(){
+    if (ac) return;
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    master = ac.createGain(); master.gain.value = 0.55; master.connect(ac.destination);
+    nb = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  function env(g, vol, dur){ const t = ac.currentTime; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(vol, 0.0002), t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  function burst(dur, f, q, vol, type = "lowpass", delay = 0){
+    if (!ac || vol <= 0.01) return;
+    const s = ac.createBufferSource(); s.buffer = nb;
+    const fl = ac.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+    const g = ac.createGain(); s.connect(fl); fl.connect(g); g.connect(master);
+    const t = ac.currentTime + delay; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.start(t); s.stop(t + dur + 0.05);
+  }
+  function tone(f0, f1, dur, vol, type = "sine", pan = 0){
+    if (!ac || vol <= 0.01) return;
+    const o = ac.createOscillator(); o.type = type; const t = ac.currentTime;
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = ac.createGain(); env(g, vol, dur);
+    let node = g;
+    if (ac.createStereoPanner){ const p = ac.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); g.connect(p); node = p; }
+    o.connect(g); node.connect(master); o.start(t); o.stop(t + dur + 0.05);
+  }
+  return {
+    init,
+    swing(){ burst(0.14, 1100, 0.8, 0.18, "bandpass"); },
+    hit(crit){ burst(0.1, 260, 1, crit ? 0.7 : 0.45); tone(110, 45, 0.14, 0.35); },
+    groan(v, pan){
+      if (!ac || v <= 0.02) return;
+      const o = ac.createOscillator(); o.type = "sawtooth"; const t = ac.currentTime, f = rf(70, 110);
+      o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * rf(.75, .9), t + 1.1);
+      const fl = ac.createBiquadFilter(); fl.type = "lowpass"; fl.frequency.value = 520;
+      const g = ac.createGain(); env(g, v * 0.22, 1.2);
+      o.connect(fl); fl.connect(g);
+      if (ac.createStereoPanner){ const p = ac.createStereoPanner(); p.pan.value = clamp(pan / 8, -1, 1); g.connect(p); p.connect(master); } else g.connect(master);
+      o.start(t); o.stop(t + 1.3);
+    },
+    thump(v){ tone(80, 40, 0.2, v * 0.6); burst(0.1, 180, 1, v * 0.35); },
+    glass(v){ burst(0.45, 3800, 0.6, v * 0.45, "highpass"); burst(0.2, 6000, 2, v * 0.3, "bandpass", 0.05); },
+    door(){ tone(160, 110, 0.09, 0.12, "square"); },
+    hurt(){ tone(320, 160, 0.3, 0.28, "sawtooth"); burst(0.15, 400, 1, 0.3); },
+    heli(v){ for (let k = 0; k < 24; k++) burst(0.07, 90, 1, v * 0.5, "lowpass", k * 0.09); },
+    alarm(v){ tone(950, 950, 0.4, v * 0.18, "square"); setTimeout(() => tone(720, 720, 0.4, v * 0.18, "square"), 450); },
+    gunshot(){ burst(0.6, 380, 0.7, 0.32); },
+  };
+})();
+
+// ---------- DOM helpers ----------
+const $ = id => document.getElementById(id);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function closePanels(){ for (const id of ["inv", "health", "skills", "map", "ctx"]) $(id).classList.add("hidden"); closeItemMenu(); }
+const panelOpen = id => !$(id).classList.contains("hidden");
+function toggle(id, render){ const open = panelOpen(id); closePanels(); if (!open){ $(id).classList.remove("hidden"); render && render(); } }
+
+// ---------- containers in reach ----------
+function rollLoot(o, table){
+  o.items = [];
+  const L = LOOT[table]; if (!L) return;
+  let n = ri(L.rolls[0], L.rolls[1]);
+  if (P.traits.has("lucky")) n += R() < 0.4 ? 1 : 0;
+  for (let k = 0; k < n; k++) o.items.push(makeItem(wpick(L.items)));
+  o.lastT = G.min;
+}
+function nearbyContainers(){
+  const out = [];
+  const px = Math.floor(P.x), py = Math.floor(P.y);
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
+    const x = px + dx, y = py + dy; if (!inb(x, y)) continue;
+    if (Math.hypot(x + .5 - P.x, y + .5 - P.y) > 1.6) continue;
+    const o = objs.get(ix(x, y));
+    if (o && OBJ[o.type].cont){
+      if (!o.items) rollLoot(o, OBJ[o.type].cont === "shelf" ? "shelf_" + o.store : OBJ[o.type].cont);
+      const mult = o.type === "fridge" && powerOn() ? 0.25 : 1;
+      ageList(o.items, (G.min - (o.lastT ?? G.min)) * mult); o.lastT = G.min;
+      out.push({ name: OBJ[o.type].n, list: o.items, cap: OBJ[o.type].cap });
+    }
+    const fl = floorItems.get(ix(x, y));
+    if (fl && fl.length) out.push({ name: "Floor", list: fl, floor: true });
+  }
+  for (const c of G.corpses){
+    if (Math.hypot(c.x - P.x, c.y - P.y) > 1.3) continue;
+    if (!c.items) rollLoot(c, "corpse");
+    out.push({ name: "Body", list: c.items });
+  }
+  return out;
+}
+function transferTime(it){ return (0.35 + ITEMS[it.id].w * 0.35) * (P.traits.has("organized") ? 0.6 : 1); }
+
+function openInv(){ closePanels(); $("inv").classList.remove("hidden"); renderInv(); }
+function renderInv(){
+  const p = $("inv"); p.innerHTML = "";
+  const close = el("button", "close", "close"); close.onclick = closePanels; p.appendChild(close);
+  const left = el("div", "col"), right = el("div", "col");
+  const load = totalLoad(), cap = carryCap();
+  left.appendChild(el("h2", "", esc(P.name)));
+  left.appendChild(el("div", "weight" + (load > cap ? " over" : ""), `Carrying ${load.toFixed(1)} of ${cap} weight`));
+  left.appendChild(el("h3", "", "In hand and on your back"));
+  left.appendChild(itemRow(P.weapon, P.weapon ? "Primary hand" : "Primary hand: empty", null, true));
+  if (P.bag){
+    const r = el("div", "row eq", `<span>${esc(ITEMS[P.bag.id].n)}</span><span class="w">${listWeight(P.bag.items).toFixed(1)} / ${ITEMS[P.bag.id].cap}</span>`);
+    r.onclick = e => itemMenu(e, [{ label: "Take it off", fn: () => { if (P.bag.items.length) P.inv.push(...P.bag.items.splice(0)); P.inv.push(P.bag); P.bag = null; renderInv(); } }]);
+    left.appendChild(r);
+  } else left.appendChild(el("div", "row", "<span>Back: empty</span>"));
+  left.appendChild(el("h3", "", "Pockets"));
+  if (!P.inv.length) left.appendChild(el("div", "row", "<span>Nothing</span>"));
+  for (const it of P.inv) if (it !== P.weapon) left.appendChild(itemRow(it, null, null, false));
+  if (P.bag){
+    left.appendChild(el("h3", "", esc(ITEMS[P.bag.id].n)));
+    if (!P.bag.items.length) left.appendChild(el("div", "row", "<span>Empty</span>"));
+    for (const it of P.bag.items) if (it !== P.weapon) left.appendChild(itemRow(it, null, null, false));
+  }
+  const conts = nearbyContainers();
+  right.appendChild(el("h2", "", "Nearby"));
+  if (!conts.length) right.appendChild(el("div", "row", "<span>Nothing in reach. Stand next to a container, a body or items on the floor.</span>"));
+  for (const c of conts){
+    const h = el("h3", "", `${esc(c.name)} `);
+    if (c.list.length){
+      const all = el("button", "", "take all"); all.style.cssText = "font-size:12px;margin-left:8px;cursor:pointer";
+      all.onclick = () => { for (const it of c.list.slice()) queueTake(it, c); renderInv(); };
+      h.appendChild(all);
+    }
+    right.appendChild(h);
+    if (!c.list.length) right.appendChild(el("div", "row", "<span>Empty</span>"));
+    for (const it of c.list) right.appendChild(itemRow(it, null, c, false));
+  }
+  p.appendChild(left); p.appendChild(right);
+}
+function itemRow(it, label, cont, equipped){
+  if (!it) return el("div", "row", `<span>${esc(label)}</span>`);
+  const d = ITEMS[it.id], fs = freshState(it);
+  let tags = "";
+  if (fs === "stale") tags += `<span class="tag">stale</span>`;
+  if (fs === "rotten") tags += `<span class="tag bad">rotten</span>`;
+  if (it.cond !== undefined) tags += `<span class="tag${it.cond / d.cond < .3 ? " bad" : ""}">${Math.round(it.cond / d.cond * 100)}%</span>`;
+  if (P.weapon === it && !equipped) tags += `<span class="tag">held</span>`;
+  const r = el("div", "row" + (equipped ? " eq" : ""), `<span>${esc(iname(it))}${tags}</span><span class="w">${d.w.toFixed(1)}</span>`);
+  r.onclick = e => {
+    if (cont){ itemMenu(e, [{ label: "Take", fn: () => { queueTake(it, cont); } }, ...(canUse(it) === true && useLabel(it) ? [{ label: useLabel(it) + " from here", fn: () => { queueTake(it, cont); act("", 0.01, () => useItem(it)); } }] : [])]); return; }
+    const opts = [];
+    const ul = useLabel(it), cu = canUse(it);
+    if (ul) opts.push({ label: cu === true ? ul : `${ul} (${cu})`, off: cu !== true, fn: () => useItem(it) });
+    if (d.cat === "weapon") opts.push(P.weapon === it ? { label: "Unequip", fn: () => { P.weapon = null; } } : { label: "Equip in hand", fn: () => act("Equipping", 0.4, () => { P.weapon = it; }) });
+    if (d.cat === "bag" && !P.bag) opts.push({ label: "Wear on back", fn: () => act("Putting on bag", 1, () => { removeItem(it); P.bag = it; }) });
+    const conts = nearbyContainers().filter(c => !c.floor);
+    for (const c of conts.slice(0, 3)) opts.push({ label: `Put in ${c.name.toLowerCase()}`, fn: () => act("Moving item", transferTime(it), () => { if (removeItem(it)) c.list.push(it); }) });
+    opts.push({ label: "Drop on floor", fn: () => act("Dropping", 0.3, () => { if (removeItem(it)){ const i = ix(P.x | 0, P.y | 0), fl = floorItems.get(i) || []; fl.push(it); floorItems.set(i, fl); } }) });
+    itemMenu(e, opts);
+  };
+  return r;
+}
+function queueTake(it, c){
+  act("Taking " + ITEMS[it.id].n.toLowerCase(), transferTime(it), () => {
+    const k = c.list.indexOf(it); if (k < 0) return;
+    c.list.splice(k, 1); giveItem(it);
+  });
+}
+function itemMenu(e, opts){
+  closeItemMenu();
+  const m = el("div", "itemmenu"); m.id = "itemmenu";
+  for (const o of opts){
+    const d = el("div", o.off ? "off" : "", esc(o.label));
+    d.onclick = ev => { ev.stopPropagation(); if (o.off) return; closeItemMenu(); o.fn(); setTimeout(() => { if (panelOpen("inv")) renderInv(); }, 30); };
+    m.appendChild(d);
+  }
+  m.style.left = Math.min(e.clientX, innerWidth - 220) + "px"; m.style.top = Math.min(e.clientY, innerHeight - 30 * opts.length - 10) + "px";
+  document.body.appendChild(m);
+  e.stopPropagation();
+}
+function closeItemMenu(){ const m = $("itemmenu"); if (m) m.remove(); }
+addEventListener("click", e => { if (!e.target.closest(".itemmenu")) closeItemMenu(); });
+
+// ---------- health panel ----------
+function renderHealth(){
+  const p = $("health"); p.innerHTML = "";
+  const close = el("button", "close", "close"); close.onclick = closePanels; p.appendChild(close);
+  const hp = P.health;
+  const word = hp > 90 ? "You feel fine." : hp > 70 ? "You've been hurt." : hp > 45 ? "You're badly hurt." : hp > 25 ? "You're in critical condition." : "You're close to death.";
+  p.appendChild(el("h2", "", "Health"));
+  p.appendChild(el("p", "", `${word} <span class="w">(${Math.round(hp)}%)</span>`));
+  if (P.painkill > 0) p.appendChild(el("p", "", "Painkillers are dulling the pain."));
+  if (!P.wounds.length) p.appendChild(el("p", "", "No wounds. Keep it that way."));
+  for (const w of P.wounds){
+    const box = el("div", "row"); box.style.cursor = "default"; box.style.flexWrap = "wrap";
+    let st = [];
+    if (w.bleed && !w.bandaged) st.push(`<span class="tag bad">bleeding</span>`);
+    if (w.bandaged) st.push(`<span class="tag">${w.dirty ? "dirty bandage" : "bandaged"}</span>`);
+    if (w.inf) st.push(`<span class="tag bad">infected</span>`);
+    if (w.glassIn) st.push(`<span class="tag bad">glass inside</span>`);
+    if (w.stitched) st.push(`<span class="tag">stitched</span>`);
+    box.appendChild(el("span", "", `${esc(PARTNAME[w.part])}: ${WOUND[w.type].n} ${st.join("")}`));
+    const btns = el("span");
+    const add = (label, fn) => { const b = el("button", "", label); b.style.cssText = "font-size:12px;margin-left:4px;cursor:pointer"; b.onclick = () => { fn(); setTimeout(renderHealth, 50); }; btns.appendChild(b); };
+    if (!w.bandaged || w.dirty) add(w.bandaged ? "Change bandage" : "Bandage", () => { if (w.bandaged) w.bandaged = false; bandage(w); });
+    if (w.inf || !w.clean) add("Disinfect", () => disinfect(w));
+    if (w.glassIn) add("Remove glass", () => removeGlass(w));
+    if ((w.type === "laceration" || w.type === "bite" || w.type === "glass") && !w.stitched) add("Stitch", () => stitch(w));
+    box.appendChild(btns); p.appendChild(box);
+  }
+  p.appendChild(el("h3", "", "How you feel"));
+  const active = VITALS.filter(v => G.vit[v.id] > 0);
+  p.appendChild(el("p", "", active.length ? active.map(v => VITALS.find(x => x === v).n[G.vit[v.id] - 1]).join(", ") + "." : "Nothing out of the ordinary."));
+}
+
+// ---------- skills panel ----------
+function renderSkills(){
+  const p = $("skills"); p.innerHTML = "";
+  const close = el("button", "close", "close"); close.onclick = closePanels; p.appendChild(close);
+  p.appendChild(el("h2", "", "Skills"));
+  let grp = "";
+  for (const k in SKILLS){
+    const s = SKILLS[k], st = P.sk[k];
+    if (s.grp !== grp){ grp = s.grp; p.appendChild(el("h3", "", grp)); }
+    const row = el("div", "skill");
+    row.appendChild(el("span", "", esc(s.n) + (P.books[k] ? ` <span class="tag">x3</span>` : "")));
+    const pips = el("div", "pips");
+    for (let i = 0; i < 10; i++){
+      const pi = el("i", i < st.lvl ? "on" : i === st.lvl ? "part" : "");
+      if (i === st.lvl && st.lvl < 10) pi.style.setProperty("--p", Math.round(st.xp / XP_NEED[st.lvl] * 100) + "%");
+      pips.appendChild(pi);
+    }
+    row.appendChild(pips); row.appendChild(el("span", "", st.lvl));
+    p.appendChild(row);
+  }
+  p.appendChild(el("p", "", `Traits: ${[...P.traits].map(t => TRAITS[t].n).join(", ") || "none"}. Job: ${OCCS[P.occ].n}.`));
+}
+
+// ---------- map ----------
+function renderMap(){
+  const c = $("mapc"), m = c.getContext("2d"), s = 5;
+  m.fillStyle = "#2a2620"; m.fillRect(0, 0, c.width, c.height);
+  const col = { [T.GRASS]: "#4f6a3a", [T.ROAD]: "#3e4144", [T.WALK]: "#8e8c86", [T.FLOOR]: "#b5a77d", [T.WALL]: "#1f1c18", [T.DOOR]: "#8a5a2e", [T.WIN]: "#7fa5b8", [T.TREE]: "#2f4a2a", [T.LOT]: "#55585b", [T.DIRT]: "#6b5a40" };
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+    if (!explored[ix(x, y)]) continue;
+    m.fillStyle = col[tile[ix(x, y)]]; m.fillRect(x * s, y * s, s, s);
+  }
+  m.fillStyle = "#ff5a4a"; m.beginPath(); m.arc(P.x * s, P.y * s, 4, 0, 7); m.fill();
+}
+
+// ---------- context menu ----------
+let ctxOpts = [];
+function openCtx(){
+  ctxOpts = interactions();
+  const m = $("ctx"); m.innerHTML = "";
+  if (!ctxOpts.length){ say("Nothing to interact with here."); return; }
+  ctxOpts.forEach((o, k) => {
+    const d = el("div", o.off ? "off" : "", `<b>${k < 9 ? k + 1 : ""}</b><span>${esc(o.label)}</span>`);
+    d.onclick = () => pickCtx(k); m.appendChild(d);
+  });
+  const [sx, sy] = S(P.x, P.y, 30);
+  m.style.left = Math.min(sx + 30, innerWidth - 260) + "px"; m.style.top = Math.max(10, Math.min(sy - 40, innerHeight - 30 * ctxOpts.length - 20)) + "px";
+  m.classList.remove("hidden");
+}
+function pickCtx(k){ const o = ctxOpts[k]; if (!o || o.off) return; $("ctx").classList.add("hidden"); o.fn && o.fn(); }
+
+// ---------- HUD ----------
+const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const VCOL = ["", "#b5a442", "#c97c2c", "#b8412c", "#7a1a14"];
+let vitalSig = "";
+function updateHUD(){
+  const day = Math.floor(G.min / 1440), mins = Math.floor(G.min % 1440);
+  const dim = [31,28,31,30,31,30,31,31,30,31,30,31];
+  let dd = day, mo = 6; while (dd > dim[mo]){ dd -= dim[mo]; mo = (mo + 1) % 12; }
+  const hh = String(Math.floor(mins / 60)).padStart(2, "0"), mm = String(mins % 60).padStart(2, "0");
+  $("stamp").innerHTML = `<span class="rec">● REC</span><br>${MONTHS[mo]} ${String(dd).padStart(2, " ")} 1993<br>${hh}:${mm}`;
+  const sp = P.sleeping ? "▶▶▶ SLEEP" : G.speedIdx === 0 ? "▶ PLAY" : G.speedIdx === 1 ? "▶▶ x3" : "▶▶▶ x8";
+  $("speed").textContent = sp + (G.rain ? "   RAIN" : "");
+  const w = P.weapon ? ITEMS[P.weapon.id] : null;
+  $("equip").innerHTML = `${w ? esc(w.n) + `<span class="bar"><i style="width:${Math.round(P.weapon.cond / w.cond * 100)}%"></i></span>` : "Bare hands"}<br>` +
+    `LOAD ${totalLoad().toFixed(1)}/${carryCap()}  ${P.sneaking ? "SNEAK" : P.running ? "RUN" : "WALK"}  ${P.flash ? "LIGHT" : ""}`;
+  const sig = VITALS.map(v => G.vit[v.id]).join("") + (P.fullT > 0 ? "f" : "");
+  if (sig !== vitalSig){
+    vitalSig = sig;
+    const box = $("vitals"); box.innerHTML = "";
+    for (const v of VITALS){
+      const l = G.vit[v.id]; if (!l) continue;
+      const d = el("div", "vital", `<span class="tip">${esc(v.n[l - 1])}<small>${esc(v.d[l - 1])}</small></span><span class="ico" style="background:${VCOL[l]}">${v.ic}</span>`);
+      box.appendChild(d);
+    }
+    if (P.fullT > 0) box.appendChild(el("div", "vital", `<span class="tip">Well fed<small>Feeling good.</small></span><span class="ico" style="background:#5f8f4a">😋</span>`));
+  }
+}
+
+// ---------- input ----------
+const keys = {}; let mouse = { x: 0, y: 0 }, rmb = false;
+addEventListener("keydown", e => {
+  if (!G || !G.running) return;
+  if (e.target.tagName === "INPUT") return;
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (["w","a","s","d"].includes(k) && !$("ctx").classList.contains("hidden")) $("ctx").classList.add("hidden");
+  if (k === " "){ e.preventDefault(); shove(); }
+  if (k === "c") P.sneaking = !P.sneaking;
+  if (k === "f"){ P.flash = !P.flash; sfx.door(); }
+  if (k === "e"){ if (panelOpen("ctx")) $("ctx").classList.add("hidden"); else { closePanels(); openCtx(); } }
+  if (k === "i") toggle("inv", renderInv);
+  if (k === "h") toggle("health", renderHealth);
+  if (k === "k") toggle("skills", renderSkills);
+  if (k === "m") toggle("map", renderMap);
+  if (k === "t"){ if (G.visZ > 0 || G.anyChase) say("You can't rush time with the dead this close."); else G.speedIdx = (G.speedIdx + 1) % CFG.speeds.length; }
+  if (k === "escape") closePanels();
+  if (/^[1-9]$/.test(k) && panelOpen("ctx")) pickCtx(+k - 1);
+  if (e.key === "Tab") e.preventDefault();
+});
+addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; rmb = false; });
+cv.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+cv.addEventListener("contextmenu", e => e.preventDefault());
+cv.addEventListener("mousedown", e => {
+  if (!G || !G.running) return;
+  closeItemMenu();
+  if (e.button === 2) rmb = true;
+  if (e.button === 0){ $("ctx").classList.add("hidden"); aimAtMouse(); swingWeapon(); }
+});
+addEventListener("mouseup", e => { if (e.button === 2) rmb = false; });
+cv.addEventListener("wheel", e => { if (G) G.zoom = clamp(G.zoom * (e.deltaY < 0 ? 1.1 : 0.9), 0.55, 1.8); }, { passive: true });
+function aimAtMouse(){ const [wx, wy] = toWorld(mouse.x, mouse.y + 30 * zoom); P.face = Math.atan2(wy - P.y, wx - P.x); }
+
+// ---------- player movement ----------
+function stepPlayer(dt){
+  let ix_ = 0, iy_ = 0;
+  if (keys.w){ ix_ -= 1; iy_ -= 1; } if (keys.s){ ix_ += 1; iy_ += 1; }
+  if (keys.a){ ix_ -= 1; iy_ += 1; } if (keys.d){ ix_ += 1; iy_ -= 1; }
+  const l = Math.hypot(ix_, iy_);
+  P.moving = l > 0 && P.stagger <= 0;
+  P.running = !!keys.shift && !P.sneaking && P.endurance > 0.05;
+  P.aiming = rmb;
+  if (P.moving){
+    if (P.action || P.queue.length) cancelActions();
+    if (P.sleeping){ wake(); }
+    let spd = P.sneaking ? CFG.sneak : P.running ? CFG.run * (1 + skill("running") * 0.02) : CFG.walk;
+    spd *= moveMult(); if (P.aiming) spd *= 0.6;
+    const ox = P.x, oy = P.y;
+    moveEnt(P, ix_ / l * spd * dt, iy_ / l * spd * dt, solidP, 0.27);
+    const stride = P.sneaking ? 0.75 : P.running ? 1.55 : 1.0;
+    P.walkPhase += Math.hypot(P.x - ox, P.y - oy) * 2 * Math.PI / stride;
+    if (!P.aiming && !P.swing) P.face = Math.atan2(iy_, ix_);
+    P.stepT = (P.stepT || 0) - dt;
+    if (P.stepT <= 0){
+      P.stepT = 0.45;
+      let r = P.sneaking ? Math.max(0.6, 1.8 - skill("sneak") * 0.12) : P.running ? 8 : 3.5;
+      if (P.traits.has("clumsy")) r *= 1.3; if (G.rain) r *= 0.8;
+      noise(P.x, P.y, r);
+      if (P.running) { addXP("running", 0.35); addXP("fitness", 0.08); }
+      if (P.sneaking && G.visZ > 0) addXP("sneak", 0.6);
+    }
+  }
+  P.moveBlend = (P.moveBlend || 0) + ((P.moving ? 1 : 0) - (P.moveBlend || 0)) * Math.min(1, dt * 9);
+  if (P.aiming) aimAtMouse();
+  if (P.stagger > 0) P.stagger -= dt;
+  if (P.swingCd > 0) P.swingCd -= dt;
+  if (P.shoveCd > 0) P.shoveCd -= dt;
+  if (P.swing){
+    P.swing.t += dt;
+    if (P.swing.kind === "swing" && !P.swing.hit && P.swing.t >= P.swing.dur * 0.45){ P.swing.hit = true; resolveSwing(); }
+    if (P.swing.t >= P.swing.dur){ P.swing = null; P.swingCd = 0.08; }
+  }
+  if (P.speech){ P.speech.t -= dt; if (P.speech.t <= 0) P.speech = null; }
+}
+
+// ---------- game flow ----------
+function step(dt){
+  G.simT += dt;
+  const dm = dt * CFG.minPerSec;
+  G.min += dm;
+  P.resting = false;
+  stepPlayer(dt);
+  stepAction(dt);
+  if (!G.running) return;
+  stepZombies(dt);
+  if (!G.running) return;
+  computeVitals();
+  stepNeeds(dt, dm);
+  if (!G.running) return;
+  stepDirector(dt, dm);
+  if (P.sleeping){
+    const close = Z.some(z => z.alive && z.state === "chase" && Math.hypot(z.x - P.x, z.y - P.y) < 9);
+    if (close) wake("Something woke you. You're not alone.");
+    else if (P.fatigue <= 0.02){ wake(); say("You wake up feeling rested."); }
+    else if (R() < 0.000003){ wake("A nightmare jolts you awake."); P.panic = 30; }
+  }
+  if ((G.visZ > 0 || (G.anyChase && Z.some(z => z.alive && z.state === "chase" && Math.hypot(z.x - P.x, z.y - P.y) < 20))) && G.speedIdx){ G.speedIdx = 0; say("Time slows. Something is near."); }
+}
+
+let last = 0, hudT = 0, visT = 0, slowAvg = 0, hovT = 0;
+function frame(ts){
+  const realDt = Math.min(0.05, (ts - last) / 1000 || 0.016); last = ts;
+  if (G && G.running){
+    const mult = P.sleeping ? CFG.sleepSpeed : CFG.speeds[G.speedIdx];
+    for (let k = 0; k < mult && G.running; k++) step(realDt);
+    visT -= realDt;
+    if (visT <= 0){ computeVis(); visT = 0.06; }
+    const r0 = performance.now(); render(); const rt = performance.now() - r0;
+    slowAvg = slowAvg * 0.97 + rt * 0.03;
+    if (slowAvg > 24 && !window.__lowRes && DPR > 1){ window.__lowRes = true; resize(); }
+    hovT -= realDt;
+    if (hovT <= 0){ hovT = 0.08; const lab = hoverLabel(mouse.x, mouse.y), hv = $("hover");
+      if (lab && !panelOpen("inv")){ hv.textContent = lab; hv.style.left = (mouse.x + 16) + "px"; hv.style.top = (mouse.y + 12) + "px"; hv.classList.remove("hidden"); } else hv.classList.add("hidden"); }
+    hudT -= realDt; if (hudT <= 0){ updateHUD(); hudT = 0.2; if (panelOpen("health")) renderHealth(); }
+  }
+  requestAnimationFrame(frame);
+}
+
+function die(cause){
+  if (!P.alive) return;
+  P.alive = false; G.running = false; cancelActions();
+  // the body rises
+  const z = newZombie(P.x, P.y); z.col = OCCS[P.occ].shirt; z.state = "idle"; Z.push(z);
+  render();
+  const d = daysSurvived(), days = Math.floor(d), hours = Math.floor((d - days) * 24);
+  $("deadstamp").innerHTML = $("stamp").innerHTML.replace(/<span class="rec">.*?<\/span><br>/, "").replace("<br>", " &nbsp;");
+  $("deadfacts").innerHTML = `${esc(P.name)}, ${esc(OCCS[P.occ].n.toLowerCase())}<br>Survived ${days} day${days === 1 ? "" : "s"} and ${hours} hour${hours === 1 ? "" : "s"}<br>Zombies killed: ${P.kills}<br><span style="color:#e9e1cc;font-family:var(--type);font-size:20px">${esc(cause)}</span>`;
+  $("hover").classList.add("hidden");
+  setTimeout(() => { $("dead").classList.remove("hidden"); for (const id of ["vitals", "equip", "stamp", "speed"]) $(id).classList.add("hidden"); closePanels(); }, 1600);
+}
+
+function startGame(name, occ, traits){
+  const seed = (Math.random() * 1e9) | 0;
+  genWorld(seed);
+  P = newPlayer(name, occ, traits);
+  const startMin = CFG.startDay * 1440 + CFG.startHour * 60;
+  const dayAt = (r) => ri(r[0], r[1]) * 1440 + ri(6, 20) * 60;
+  G = { min: startMin, startMin, simT: 0, speedIdx: 0, zoom: 1.05, sounds: [], corpses: [], blood: [], alarms: [],
+    vis: null, visZ: 0, anyChase: false, vit: {}, running: true,
+    waterOff: dayAt(CFG.waterOffDay), powerOff: dayAt(CFG.powerOffDay), heliAt: ri(CFG.heliDay[0], CFG.heliDay[1]) * 1440 + ri(9, 17) * 60,
+    metaT: rf(200, 500), weatherT: rf(100, 400), rain: false };
+  // start in a bedroom of a random house
+  const beds = rooms.filter(r => r.type === "bedroom" && buildings[r.b].kind === "house");
+  const r = pick(beds);
+  const free = r.tiles.filter(([x, y]) => !objs.has(ix(x, y)));
+  const [sx, sy] = pick(free);
+  P.x = sx + .5; P.y = sy + .5; G.startBld = r.b;
+  Z = []; flow = null;
+  spawnZombies(CFG.zombieCount);
+  computeVitals(); computeVis();
+  for (const id of ["vitals", "equip", "stamp", "speed"]) $(id).classList.remove("hidden");
+  $("log").innerHTML = "";
+  say(`${name}. Harlow County. The fourth day of the quarantine.`);
+  setTimeout(() => say("Press E near things to interact, I for inventory. Stay quiet."), 2500);
+}
+
+// ---------- character creation ----------
+let selOcc = "unemployed"; const selTraits = new Set();
+const OPPOSITE = { strong: "weak", weak: "strong", athletic: "unfit", unfit: "athletic", fastlearn: "slowlearn", slowlearn: "fastlearn",
+  brave: "cowardly", cowardly: "brave", lighteat: "hearty", hearty: "lighteat", inconsp: "consp", consp: "inconsp", eagle: "shortsight", shortsight: "eagle" };
+function pointsLeft(){ let p = OCCS[selOcc].pts; for (const t of selTraits) p -= TRAITS[t].cost; return p; }
+function renderCreation(){
+  const occs = $("occs"); occs.innerHTML = "";
+  for (const k in OCCS){
+    const o = OCCS[k], d = el("div", "opt" + (k === selOcc ? " sel" : ""), `<span>${o.n}</span><span class="pts">${o.pts > 0 ? "+" : ""}${o.pts}</span>`);
+    d.tabIndex = 0; d.onclick = () => { selOcc = k; renderCreation(); }; occs.appendChild(d);
+  }
+  const sk = Object.entries(OCCS[selOcc].sk).map(([s, v]) => `${SKILLS[s].n} +${v}`).join(", ");
+  $("occdesc").textContent = OCCS[selOcc].d + (sk ? ` Starts with ${sk}.` : "");
+  for (const [box, good] of [[$("ptraits"), true], [$("ntraits"), false]]){
+    box.innerHTML = "";
+    for (const k in TRAITS){
+      const t = TRAITS[k]; if ((t.cost > 0) !== good) continue;
+      const d = el("div", "opt" + (selTraits.has(k) ? " sel" : ""), `<span>${t.n}</span><span class="pts">${t.cost > 0 ? "-" : "+"}${Math.abs(t.cost)}</span>`);
+      d.tabIndex = 0;
+      d.onmouseenter = () => { $("traitdesc").textContent = t.d; };
+      d.onclick = () => { if (selTraits.has(k)) selTraits.delete(k); else { selTraits.add(k); if (OPPOSITE[k]) selTraits.delete(OPPOSITE[k]); } $("traitdesc").textContent = t.d; renderCreation(); };
+      box.appendChild(d);
+    }
+  }
+  const p = pointsLeft();
+  $("points").textContent = `Points left: ${p}`; $("points").className = "points" + (p < 0 ? " neg" : "");
+  $("begin").disabled = p < 0;
+}
+$("begin").onclick = () => {
+  if (pointsLeft() < 0) return;
+  sfx.init();
+  $("title").classList.add("hidden");
+  startGame($("pname").value.trim() || "Sam Whitlock", selOcc, new Set(selTraits));
+};
+$("again").onclick = () => { $("dead").classList.add("hidden"); $("title").classList.remove("hidden"); renderCreation(); };
+renderCreation();
+requestAnimationFrame(frame);
+</script></body></html>
