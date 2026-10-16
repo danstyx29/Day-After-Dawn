@@ -1,0 +1,18 @@
+# On every push: rebuild the game from src/, make sure the committed dist/ build
+# matches, then load it in a headless browser and fail on any error.
+name: build-and-smoke-test
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: bash build.sh
+      - name: dist/ is up to date
+        run: git diff --exit-code dist/day_after_dawn.html || (echo "dist/day_after_dawn.html is out of date - run build.sh and commit it" && exit 1)
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      - run: python tests/smoke.py
